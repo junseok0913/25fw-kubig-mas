@@ -11,7 +11,7 @@ HDRS = {
     "Referer": "https://finance.yahoo.com/",
 }
 
-def fetch_latest() -> list[dict]:
+def fetch_news_list() -> list[dict]:
     """
     한 번의 request로 Latest News(US) 페이지에서
     1) 제목, 2) 기사 링크, 3) 관련 티커(/quote/{SYMBOL}/)만 추출.
@@ -50,7 +50,7 @@ def fetch_latest() -> list[dict]:
     return rows
 
 if __name__ == "__main__":
-    items = fetch_latest()
+    items = fetch_news_list()
     print(f"총 {len(items)}건")
     for i, it in enumerate(items, 1):
         tks = ", ".join(it["tickers"]) if it["tickers"] else "-"
