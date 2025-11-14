@@ -11,11 +11,15 @@ HDRS = {
     "Referer": "https://finance.yahoo.com/",
 }
 
+
 def fetch_news_list() -> list[dict]:
     """
-    한 번의 request로 Latest News(US) 페이지에서
-    1) 제목, 2) 기사 링크, 3) 관련 티커(/quote/{SYMBOL}/)만 추출.
-    - 폴백/디버그/동의쿠키 처리 없음. (페이지 구조 변경 시 깨질 수 있음)
+    Yahoo Finance Latest(US) 페이지에서 기사 목록을 수집합니다.
+
+    반환 필드:
+    - title: 제목
+    - url: 원본 링크
+    - tickers: 관련 티커 리스트(없으면 빈 리스트)
     """
     html = requests.get(URL, headers=HDRS, timeout=20).text
     soup = BeautifulSoup(html, "html.parser")
@@ -49,9 +53,11 @@ def fetch_news_list() -> list[dict]:
 
     return rows
 
+
 if __name__ == "__main__":
     items = fetch_news_list()
     print(f"총 {len(items)}건")
     for i, it in enumerate(items, 1):
         tks = ", ".join(it["tickers"]) if it["tickers"] else "-"
         print(f"{i:02d}. {it['title']}\n    {it['url']}\n    Tickers: {tks}")
+
