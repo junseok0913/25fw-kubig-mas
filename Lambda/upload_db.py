@@ -31,6 +31,14 @@ def _compute_pk(url: str) -> str:
     return f"{prefix}{digest16}"
 
 
+def compute_pk(url: str) -> str:
+    """외부 모듈에서 재사용할 수 있는 pk 계산기.
+
+    내부 구현은 _compute_pk와 동일합니다.
+    """
+    return _compute_pk(url)
+
+
 def _now_fields() -> dict:
     """최근 24시간 조회를 위한 최소 타임스탬프 필드를 생성합니다.
 
@@ -65,6 +73,11 @@ def build_items(rows: Iterable[dict]) -> list[dict]:
             "title": title,
             "url": url,
             "tickers": list(tickers),
+            # 본문 수집 단계에서 채워질 필드들
+            "path": "",
+            "publish_et_iso": "",
+            "provider": "",
+            "related_articles": [],
             **ts,
         }
         items.append(doc)
