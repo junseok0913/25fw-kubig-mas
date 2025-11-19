@@ -15,7 +15,7 @@
 - **핸들러**
   - 엔트리포인트: `Lambda.aws_lambda_handler.handler`
   - 환경변수:
-    - `TABLE_NAME`: DynamoDB 테이블명 (기본: `latest_news_list`)
+    - `TABLE_NAME`: DynamoDB 테이블명 (기본: `kubig-YahoofinanceNews`)
     - `AWS_REGION`: DynamoDB 및 S3가 위치한 리전
     - `BUCKET_NAME`: 뉴스 본문 XML 파일을 저장하는 S3 버킷명
 
