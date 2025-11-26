@@ -15,11 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize(df: pd.DataFrame) -> pd.DataFrame:
-    """컬럼 대소문자/멀티인덱스 정리를 수행한다."""
+    """컬럼 대소문자/멀티인덱스 정리를 수행한다.
+    
+    yfinance는 멀티인덱스 (Price, Ticker) 형태로 컬럼을 반환할 수 있다.
+    첫 번째 레벨(Price: Close, Open, High, Low, Volume)만 추출한다.
+    """
     if not isinstance(df, pd.DataFrame):
         return pd.DataFrame()
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [c[-1] if isinstance(c, tuple) else c for c in df.columns]
+        # 첫 번째 레벨(Price 타입)을 컬럼명으로 사용
+        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
     df.columns = [str(c).title() for c in df.columns]
     return df
 
