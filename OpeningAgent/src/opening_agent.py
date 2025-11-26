@@ -47,6 +47,8 @@ CONTEXT_PATH = Path("data/market_context.json")
 # 프롬프트 YAML 경로
 PROMPT_PATH = Path("prompt/opening_script.yaml")
 TITLES_PATH = Path("data/opening/titles.txt")
+# 불용어 파일 경로
+STOPWORDS_PATH = Path("config/stopwords.txt")
 
 # LangChain Tool 리스트 (LLM에 바인딩할 도구들)
 TOOLS = [
@@ -68,13 +70,49 @@ def _get_tools_description() -> str:
     return "\n".join(descriptions)
 
 
+def _load_stopwords() -> frozenset[str]:
+    """config/stopwords.txt에서 불용어를 로드한다.
+    
+    파일이 없으면 빈 frozenset을 반환한다.
+    '#'으로 시작하는 줄은 주석으로 무시된다.
+    """
+    if not STOPWORDS_PATH.exists():
+        logger.warning("불용어 파일이 없습니다: %s", STOPWORDS_PATH)
+        return frozenset()
+    
+    words = []
+    for line in STOPWORDS_PATH.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        # 빈 줄이나 주석(#)은 무시
+        if not line or line.startswith("#"):
+            continue
+        words.append(line.lower())
+    
+    return frozenset(words)
+
+
 def _top_words_from_titles(limit: int = 30) -> list[dict[str, Any]]:
-    """titles.txt에서 단어 빈도 상위 N개를 계산한다."""
+    """titles.txt에서 단어 빈도 상위 N개를 계산한다.
+    
+    불용어(stopwords), 한글자 단어, 순수 숫자는 제외된다.
+    """
     if not Path("data/opening/titles.txt").exists():
         return []
     text = Path("data/opening/titles.txt").read_text(encoding="utf-8")
-    tokens = re.findall(r"[A-Za-z0-9$%+\\-']+", text.lower())
-    counter = Counter(tokens)
+    tokens = re.findall(r"[A-Za-z0-9$%+\-']+", text.lower())
+    
+    # 불용어 로드
+    stopwords = _load_stopwords()
+    
+    # 필터링: 한글자 단어, 순수 숫자, 불용어 제외
+    filtered_tokens = [
+        t for t in tokens
+        if len(t) > 1  # 한글자 제외
+        and not t.isdigit()  # 순수 숫자 제외
+        and t not in stopwords  # 불용어 제외
+    ]
+    
+    counter = Counter(filtered_tokens)
     top = counter.most_common(limit)
     return [{"word": w, "count": c} for w, c in top]
 
