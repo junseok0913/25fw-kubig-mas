@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 import yfinance as yf
+from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,18 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@tool
 def get_ohlcv(ticker: str, period: str = "1mo", interval: str = "1d") -> Dict[str, Any]:
-    """지정한 티커의 과거 OHLCV를 조회한다."""
+    """yfinance를 통해 과거 OHLCV(시가/고가/저가/종가/거래량) 데이터를 조회한다.
+
+    Args:
+        ticker: Yahoo Finance 티커 (예: "NVDA", "^GSPC", "CL=F")
+        period: 조회 기간 ("1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max")
+        interval: 봉 간격 ("1m", "5m", "15m", "30m", "1h", "1d", "1wk", "1mo")
+
+    Returns:
+        {ticker, period, interval, rows[{ts, open, high, low, close, volume}]}
+    """
     df = yf.download(
         ticker,
         period=period,

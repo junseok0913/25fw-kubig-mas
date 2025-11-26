@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
+from langchain_core.tools import tool
 from src.utils import get_s3_client
 
 logger = logging.getLogger(__name__)
@@ -33,10 +34,19 @@ def _iter_articles() -> Iterable[Dict[str, Any]]:
         yield art
 
 
+@tool
 def get_news_list(
     tickers: Optional[List[str]] = None, keywords: Optional[List[str]] = None
 ) -> Dict[str, Any]:
-    """로컬 캐시된 뉴스 목록을 필터링하여 반환한다."""
+    """로컬 캐시된 뉴스 목록을 필터링하여 반환한다.
+
+    Args:
+        tickers: 티커 심볼 필터 (예: ["NVDA", "TSLA"]). 대소문자 무시. AND 조건.
+        keywords: 제목 키워드 필터 (예: ["AI", "earnings"]). 대소문자 무시. AND 조건.
+
+    Returns:
+        {count, filters, articles[{pk, title, tickers, publish_et_iso}]}
+    """
     payload = _load_news_list()
     articles = list(_iter_articles())
 
@@ -96,10 +106,19 @@ def _fetch_body_from_s3(pk: str, obj_key: str, bucket: Optional[str] = None) -> 
         return data.decode("utf-8", errors="ignore")
 
 
+@tool
 def get_news_content(
     pks: List[str], bucket: Optional[str] = None
 ) -> Dict[str, Any]:
-    """S3에서 본문을 조회하거나 로컬 캐시를 반환한다."""
+    """S3에서 뉴스 본문을 조회하거나 로컬 캐시를 반환한다.
+
+    Args:
+        pks: 뉴스 pk 리스트 (예: ["h#abcdef01", "h#12345678"])
+        bucket: S3 버킷명 (생략 시 NEWS_BUCKET 환경변수 사용)
+
+    Returns:
+        {count, articles[{pk, title, body, cached}]}
+    """
     articles: List[Dict[str, Any]] = []
     news_index = {a.get("pk"): a for a in _iter_articles()}
 
@@ -121,8 +140,13 @@ def get_news_content(
     return {"count": len(articles), "articles": articles}
 
 
+@tool
 def list_downloaded_bodies() -> Dict[str, Any]:
-    """로컬에 저장된 본문 파일 목록을 반환한다."""
+    """로컬에 저장된 뉴스 본문 파일 목록을 반환한다.
+
+    Returns:
+        {count, articles[{pk, title}]}
+    """
     BODIES_DIR.mkdir(parents=True, exist_ok=True)
     news_index = {a.get("pk"): a for a in _iter_articles()}
     entries = []
@@ -138,12 +162,22 @@ def _count_in_text(text: str, keyword: str) -> int:
     return len(re.findall(re.escape(keyword), text, flags=re.IGNORECASE))
 
 
+@tool
 def count_keyword_frequency(
     keywords: List[str],
     source: str = "titles",
     news_pks: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """제목 또는 본문에서 키워드 빈도를 계산한다."""
+    """제목 또는 본문에서 키워드 출현 빈도를 계산한다.
+
+    Args:
+        keywords: 검색할 키워드 리스트 (대소문자 무시)
+        source: "titles" (제목 전체) 또는 "bodies" (본문)
+        news_pks: source="bodies"일 때 분석 대상 기사 pk 목록 (생략 시 전체 본문)
+
+    Returns:
+        {<키워드>: {count, article_pks}}
+    """
     if source not in {"titles", "bodies"}:
         raise ValueError("source는 'titles' 또는 'bodies'만 허용합니다.")
 

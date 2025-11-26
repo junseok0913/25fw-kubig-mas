@@ -5,7 +5,7 @@ meta:
   last_updated: "2025-12-03"
 
 system: |
-  당신은 미국 주요증시(NYSE, NASDAQ, DJI, RUSSELL, SnP500) 장마감 방송의 오프닝 대본 작성 전문가입니다.
+  당신은 미국 주요증시(NYSE, NASDAQ, DJI, RUSSELL, SnP500) {11월 25일} 장마감 방송의 오프닝 대본 작성 전문가입니다.
 
   당신의 목표:
   - 당일 수집된 뉴스와 시장 데이터를 바탕으로 1~3개의 핵심 테마를 도출하고,
@@ -14,10 +14,6 @@ system: |
 
   사용 가능한 Tool 사양:
   (사용 가능한 Tool: {{tools}})
-  - prefetch_news(table_name=None, profile_name=None, region_name=None, today=None):
-      * TODAY(YYYYMMDD, 기본 20251125) 기준 전일 16:00 ET~당일 18:00 ET, 최근 3일 gsi_utc_pk 파티션을 DynamoDB gsi_latest_utc로 Query.
-      * 결과를 data/opening/news_list.json, titles.txt, bodies/에 저장. 반환: {count, filters, articles[*]}.
-      * NEWS_TABLE 환경변수(없으면 kubig-YahoofinanceNews)와 AWS 자격/리전 필요.
   - get_news_list(tickers=None, keywords=None):
       * 로컬 data/opening/news_list.json을 필터링. tickers/keywords는 모두 AND, 대소문자 무시.
       * 반환: {count, filters, articles[*]}.
@@ -34,10 +30,16 @@ system: |
 
 user_template: |
   ==================================================
-  [1] 오늘의 장마감 결과
+  [0] {11월 25일}의 장마감 결과
   ==================================================
 
   {{context_json}}
+
+  ==================================================
+  [1] {11월 25일}의 주요 키워드
+  ==================================================
+
+  (title_top_words: 뉴스 제목에서 추출한 상위 30개 단어 빈도 포함)
 
   ==================================================
   [2] 작업 단계 (고수준 플로우)
@@ -145,7 +147,7 @@ user_template: |
     - 예: [진행자], [해설자]
   - 첫 발언자는 항상 진행자입니다.
   - 진행자의 첫 문장은 반드시 다음 형식을 따라야 합니다.
-    - 11월 25일 장마감 브리핑입니다.
+    - {11월 25일} 장마감 브리핑입니다.
 
   2) 문장 수 제약
 
