@@ -152,7 +152,7 @@ def load_context_node(state: OpeningState) -> OpeningState:
         context = json.load(f)
     logger.info("Loaded market context from %s", CONTEXT_PATH)
     # 제목 상위 30개 단어 빈도 추가
-    context["title_top_words"] = _top_words_from_titles(limit=30)
+    context["title_top_words"] = _top_words_from_titles(limit=50)
     return {**state, "context_json": context}
 
 
