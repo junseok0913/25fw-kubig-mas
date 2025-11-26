@@ -234,7 +234,6 @@ def get_news_list(
     Args:
         tickers: tickers 필드에 해당 심볼이 포함된 기사만 필터링 (대소문자 무시)
         keywords: 제목에 해당 키워드가 포함된 기사만 필터링 (대소문자 무시)
-        limit: 반환할 최대 뉴스 개수
     
     Note:
         - tickers와 keywords를 동시에 지정하면 AND 조건 (둘 다 만족)
