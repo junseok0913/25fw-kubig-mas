@@ -1,7 +1,7 @@
 """Fetch day-end market context for Opening Agent using yfinance.
 
-Outputs a JSON payload to OpeningAgent/data/context/market_context.json.
-Temporary CSVs of raw yfinance responses are written to OpeningAgent/data/context/_tmp_csv
+Outputs a JSON payload to data/context/market_context.json.
+Temporary CSVs of raw yfinance responses are written to data/context/_tmp_csv
 and cleaned up after context generation.
 """
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 KST = pytz.timezone("Asia/Seoul")
 ET = pytz.timezone("America/New_York")
 
-CONTEXT_DIR = Path("OpeningAgent/data")
+CONTEXT_DIR = Path("data")
 TMP_DIR = CONTEXT_DIR / "_tmp_csv"
 OUTPUT_JSON = CONTEXT_DIR / "market_context.json"
 
