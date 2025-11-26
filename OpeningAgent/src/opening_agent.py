@@ -24,6 +24,7 @@ from langgraph.graph import END, START, StateGraph
 import yaml
 
 from src import context_today, prefetch
+from src.utils.tracing import configure_tracing
 from src.tools import (
     count_keyword_frequency,
     get_news_content,
@@ -31,7 +32,6 @@ from src.tools import (
     get_ohlcv,
     list_downloaded_bodies,
 )
-
 
 # 로깅 설정: CLI 실행 시에도 깔끔하게 남도록 INFO 기본값 사용
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -122,6 +122,8 @@ def _build_llm() -> ChatOpenAI:
     model_name = os.getenv("OPENAI_MODEL", "gpt-5.1")
     reasoning_effort = os.getenv("OPENAI_REASONING_EFFORT", "medium")
     temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.0"))
+
+    configure_tracing(logger=logger)
 
     return ChatOpenAI(
         model=model_name,
