@@ -47,6 +47,7 @@ def get_news_list(
     Returns:
         {count, filters, articles[{pk, title, tickers, publish_et_iso}]}
     """
+    logger.info("get_news_list 호출: tickers=%s, keywords=%s", tickers, keywords)
     payload = _load_news_list()
     articles = list(_iter_articles())
 
@@ -62,6 +63,7 @@ def get_news_list(
         return True
 
     filtered = [a for a in articles if matches(a)]
+    logger.info("get_news_list 결과: %d건 반환", len(filtered))
     return {
         "count": len(filtered),
         "filters": {"tickers": tickers, "keywords": keywords},
@@ -119,6 +121,7 @@ def get_news_content(
     Returns:
         {count, articles[{pk, title, body, cached}]}
     """
+    logger.info("get_news_content 호출: pks=%s, bucket=%s", pks, bucket)
     articles: List[Dict[str, Any]] = []
     news_index = {a.get("pk"): a for a in _iter_articles()}
 
@@ -137,6 +140,7 @@ def get_news_content(
         _write_body(pk, body_text)
         articles.append({"pk": pk, "title": meta.get("title"), "body": body_text, "cached": False})
 
+    logger.info("get_news_content 결과: %d건 반환", len(articles))
     return {"count": len(articles), "articles": articles}
 
 
@@ -147,6 +151,7 @@ def list_downloaded_bodies() -> Dict[str, Any]:
     Returns:
         {count, articles[{pk, title}]}
     """
+    logger.info("list_downloaded_bodies 호출")
     BODIES_DIR.mkdir(parents=True, exist_ok=True)
     news_index = {a.get("pk"): a for a in _iter_articles()}
     entries = []
@@ -154,6 +159,7 @@ def list_downloaded_bodies() -> Dict[str, Any]:
         pk = file.stem
         title = news_index.get(pk, {}).get("title")
         entries.append({"pk": pk, "title": title})
+    logger.info("list_downloaded_bodies 결과: %d건 반환", len(entries))
     return {"count": len(entries), "articles": entries}
 
 
@@ -178,6 +184,7 @@ def count_keyword_frequency(
     Returns:
         {<키워드>: {count, article_pks}}
     """
+    logger.info("count_keyword_frequency 호출: keywords=%s, source=%s, news_pks=%s", keywords, source, news_pks)
     if source not in {"titles", "bodies"}:
         raise ValueError("source는 'titles' 또는 'bodies'만 허용합니다.")
 
@@ -188,6 +195,7 @@ def count_keyword_frequency(
         text = TITLES_PATH.read_text(encoding="utf-8")
         for kw in keywords:
             results[kw] = {"count": _count_in_text(text, kw), "article_pks": []}
+        logger.info("count_keyword_frequency 결과(titles): %s", {k: v["count"] for k, v in results.items()})
         return results
 
     # bodies
@@ -205,4 +213,5 @@ def count_keyword_frequency(
                 results[kw]["count"] += cnt
                 results[kw].setdefault("article_pks", []).append(pk)
 
+    logger.info("count_keyword_frequency 결과(bodies): %s", {k: v["count"] for k, v in results.items()})
     return results

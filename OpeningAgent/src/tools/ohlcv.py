@@ -124,4 +124,5 @@ def get_ohlcv(ticker: str, period: str = "1mo", interval: str = "1d") -> Dict[st
             }
         )
 
+    logger.info("get_ohlcv 결과: %d개 행 반환", len(rows))
     return {"ticker": ticker, "period": period, "interval": interval, "rows": rows}
