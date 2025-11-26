@@ -18,7 +18,7 @@ import os
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Annotated, Any, Dict, Sequence, TypedDict
+from typing import Annotated, Any, Dict, List, Literal, Sequence, TypedDict
 
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -49,6 +49,8 @@ PROMPT_PATH = Path("prompt/opening_script.yaml")
 TITLES_PATH = Path("data/opening/titles.txt")
 # 불용어 파일 경로
 STOPWORDS_PATH = Path("config/stopwords.txt")
+# 최종 결과 JSON 저장 경로
+OUTPUT_PATH = Path("data/opening_result.json")
 
 # LangChain Tool 리스트 (LLM에 바인딩할 도구들)
 TOOLS = [
@@ -117,13 +119,48 @@ def _top_words_from_titles(limit: int = 30) -> list[dict[str, Any]]:
     return [{"word": w, "count": c} for w, c in top]
 
 
-class OpeningState(TypedDict, total=False):
-    """그래프 상태 정의: 메시지 기반 ReAct 패턴."""
+class NewsSource(TypedDict):
+    """뉴스 출처 정보."""
+    pk: str
+    title: str
 
+
+class Theme(TypedDict):
+    """핵심 테마 정보."""
+    headline: str  # 짧은 테마 제목 (10~20자)
+    description: str  # 테마 상세 설명 (1~3문장)
+    related_news: List[NewsSource]  # 근거 뉴스 목록
+
+
+class ScriptTurn(TypedDict):
+    """진행자/해설자 한 턴의 발언."""
+    speaker: Literal["진행자", "해설자"]
+    text: str
+    sources: List[NewsSource]
+
+
+class OpeningState(TypedDict, total=False):
+    """그래프 상태 정의: 메시지 기반 ReAct 패턴.
+    
+    중간 처리용 필드:
+        messages: ReAct 메시지 히스토리
+        context_json: yfinance 시장 데이터
+        news_meta: DynamoDB에서 프리페치한 뉴스 메타
+    
+    최종 출력용 필드 (Agent 완료 후):
+        theme: 핵심 테마 1~3개 (headline, description, related_news 포함)
+        nutshell: 오늘 장 한마디
+        scripts: 진행자/해설자 대화
+    """
+    # 중간 처리용
     messages: Annotated[Sequence[BaseMessage], add_messages]
     context_json: Dict[str, Any]
     news_meta: Dict[str, Any]
-    script_markdown: str
+    
+    # 최종 출력용
+    theme: List[Theme]
+    nutshell: str
+    scripts: List[ScriptTurn]
 
 
 def prefetch_node(state: OpeningState) -> OpeningState:
@@ -246,15 +283,66 @@ def should_continue(state: OpeningState) -> str:
     return "end"
 
 
+def _parse_json_from_response(content: str) -> Dict[str, Any]:
+    """AI 응답에서 JSON을 추출하고 파싱한다."""
+    # ```json ... ``` 블록에서 JSON 추출
+    json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
+    if json_match:
+        json_str = json_match.group(1)
+    else:
+        # 블록이 없으면 전체 내용을 JSON으로 시도
+        json_str = content.strip()
+    
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        logger.error("JSON 파싱 실패: %s", e)
+        return {}
+
+
 def extract_script_node(state: OpeningState) -> OpeningState:
-    """최종 메시지에서 대본을 추출한다."""
+    """최종 메시지에서 구조화된 대본을 추출하고 JSON 파일로 저장한다.
+    
+    중간 처리용 필드(messages, context_json, news_meta)를 제거하고
+    최종 출력용 필드(theme, nutshell, scripts)만 반환한다.
+    """
     messages = state.get("messages", [])
-    script = ""
+    
+    # AI의 마지막 응답에서 JSON 추출
+    raw_content = ""
     for msg in reversed(messages):
         if isinstance(msg, AIMessage) and not msg.tool_calls:
-            script = msg.content
+            raw_content = msg.content
             break
-    return {**state, "script_markdown": script}
+    
+    # JSON 파싱
+    parsed = _parse_json_from_response(raw_content)
+    
+    theme = parsed.get("theme", [])
+    nutshell = parsed.get("nutshell", "")
+    scripts = parsed.get("scripts", [])
+    
+    # 결과 구성
+    result = {
+        "theme": theme,
+        "nutshell": nutshell,
+        "scripts": scripts,
+    }
+    
+    # JSON 파일로 저장
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    logger.info("최종 결과를 저장했습니다: %s", OUTPUT_PATH)
+    
+    # 최종 State: 중간 처리용 필드 제거, 최종 출력용 필드만 반환
+    return {
+        "theme": theme,
+        "nutshell": nutshell,
+        "scripts": scripts,
+    }
 
 
 def build_graph():
@@ -344,9 +432,41 @@ def main() -> None:
     # 빈 상태로 시작하여 컨텍스트 로드 → 대본 생성 순으로 실행
     result = workflow.invoke({})
 
-    script = result.get("script_markdown", "")
-    print("\n=== 오프닝 대본 (컨텍스트 기반) ===\n")
-    print(script)
+    # 최종 State 출력
+    print("\n=== 오프닝 대본 결과 ===\n")
+    
+    themes = result.get("theme", [])
+    nutshell = result.get("nutshell", "")
+    scripts = result.get("scripts", [])
+    
+    print("테마:")
+    for i, t in enumerate(themes, 1):
+        headline = t.get("headline", "") if isinstance(t, dict) else t
+        description = t.get("description", "") if isinstance(t, dict) else ""
+        related_news = t.get("related_news", []) if isinstance(t, dict) else []
+        
+        print(f"  {i}. {headline}")
+        if description:
+            print(f"     {description}")
+        if related_news:
+            news_titles = [n.get("title", "") for n in related_news]
+            print(f"근거: {', '.join(news_titles[:3])}")  # 최대 3개만 표시
+    
+    print(f"\n한마디: {nutshell}")
+    print("\n--- 대본 ---\n")
+    
+    for turn in scripts:
+        speaker = turn.get("speaker", "")
+        text = turn.get("text", "")
+        sources = turn.get("sources", [])
+        
+        print(f"[{speaker}] {text}")
+        if sources:
+            source_titles = [s.get("title", "") for s in sources]
+            print(f"출처: {', '.join(source_titles)}")
+        print()
+    
+    print(f"\n결과가 저장되었습니다: {OUTPUT_PATH}")
 
     # 실행이 끝나면 캐시된 파일 정리
     try:
