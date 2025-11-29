@@ -42,15 +42,23 @@ from src.tools import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+BASE_DIR = Path(__file__).resolve().parent.parent  # OpeningAgent/
+ROOT_DIR = BASE_DIR.parent  # repo root
+
 # 컨텍스트 파일 경로 (yfinance 수집 결과)
-CONTEXT_PATH = Path("data/market_context.json")
+CONTEXT_PATH = BASE_DIR / "data/market_context.json"
 # 프롬프트 YAML 경로
-PROMPT_PATH = Path("prompt/opening_script.yaml")
-TITLES_PATH = Path("data/opening/titles.txt")
+PROMPT_PATH = BASE_DIR / "prompt/opening_script.yaml"
+TITLES_PATH = BASE_DIR / "data/opening/titles.txt"
 # 불용어 파일 경로
-STOPWORDS_PATH = Path("config/stopwords.txt")
+STOPWORDS_PATH = BASE_DIR / "config/stopwords.txt"
 # 최종 결과 JSON 저장 경로
-OUTPUT_PATH = Path("data/opening_result.json")
+OUTPUT_PATH = BASE_DIR / "data/opening_result.json"
+
+
+def _load_env() -> None:
+    """리포지토리 루트(.env)에서 환경변수 로드."""
+    load_dotenv(ROOT_DIR / ".env", override=False)
 
 # LangChain Tool 리스트 (LLM에 바인딩할 도구들)
 TOOLS = [
@@ -98,9 +106,9 @@ def _top_words_from_titles(limit: int = 30) -> list[dict[str, Any]]:
     
     불용어(stopwords), 한글자 단어, 순수 숫자는 제외된다.
     """
-    if not Path("data/opening/titles.txt").exists():
+    if not TITLES_PATH.exists():
         return []
-    text = Path("data/opening/titles.txt").read_text(encoding="utf-8")
+    text = TITLES_PATH.read_text(encoding="utf-8")
     tokens = re.findall(r"[A-Za-z0-9$%+\-']+", text.lower())
     
     # 불용어 로드
@@ -148,7 +156,7 @@ class OpeningState(TypedDict, total=False):
         news_meta: DynamoDB에서 프리페치한 뉴스 메타
     
     최종 출력용 필드 (Agent 완료 후):
-        theme: 핵심 테마 1~3개 (headline, description, related_news 포함)
+        themes: 핵심 테마 1~3개 (headline, description, related_news 포함)
         nutshell: 오늘 장 한마디
         scripts: 진행자/해설자 대화
     """
@@ -158,7 +166,7 @@ class OpeningState(TypedDict, total=False):
     news_meta: Dict[str, Any]
     
     # 최종 출력용
-    theme: List[Theme]
+    themes: List[Theme]
     nutshell: str
     scripts: List[ScriptTurn]
 
@@ -304,7 +312,7 @@ def extract_script_node(state: OpeningState) -> OpeningState:
     """최종 메시지에서 구조화된 대본을 추출하고 JSON 파일로 저장한다.
     
     중간 처리용 필드(messages, context_json, news_meta)를 제거하고
-    최종 출력용 필드(theme, nutshell, scripts)만 반환한다.
+    최종 출력용 필드(themes, nutshell, scripts)만 반환한다.
     """
     messages = state.get("messages", [])
     
@@ -318,16 +326,12 @@ def extract_script_node(state: OpeningState) -> OpeningState:
     # JSON 파싱
     parsed = _parse_json_from_response(raw_content)
     
-    theme = parsed.get("theme", [])
+    themes = parsed.get("themes") or parsed.get("theme", [])  # 프롬프트 키 혼용 대응
     nutshell = parsed.get("nutshell", "")
     scripts = parsed.get("scripts", [])
     
     # 결과 구성
-    result = {
-        "theme": theme,
-        "nutshell": nutshell,
-        "scripts": scripts,
-    }
+    result = {"themes": themes, "nutshell": nutshell, "scripts": scripts}
     
     # JSON 파일로 저장
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -338,11 +342,7 @@ def extract_script_node(state: OpeningState) -> OpeningState:
     logger.info("최종 결과를 저장했습니다: %s", OUTPUT_PATH)
     
     # 최종 State: 중간 처리용 필드 제거, 최종 출력용 필드만 반환
-    return {
-        "theme": theme,
-        "nutshell": nutshell,
-        "scripts": scripts,
-    }
+    return {"themes": themes, "nutshell": nutshell, "scripts": scripts}
 
 
 def build_graph():
@@ -353,6 +353,7 @@ def build_graph():
           → agent ⇄ tools (반복)
           → extract_script → END
     """
+    _load_env()
     graph = StateGraph(OpeningState)
 
     # 노드 정의
@@ -390,11 +391,11 @@ def cleanup_cache() -> None:
     """에이전트 실행 후 캐시 파일을 정리한다."""
     # 시장 컨텍스트/뉴스 메타/본문 캐시 제거
     news_files = [
-        Path("data/opening/news_list.json"),
-        Path("data/opening/titles.txt"),
-        Path("data/market_context.json"),
+        BASE_DIR / "data/opening/news_list.json",
+        BASE_DIR / "data/opening/titles.txt",
+        BASE_DIR / "data/market_context.json",
     ]
-    bodies_dir = Path("data/opening/bodies")
+    bodies_dir = BASE_DIR / "data/opening/bodies"
     for file in news_files:
         if file.exists():
             try:
@@ -410,7 +411,7 @@ def cleanup_cache() -> None:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("본문 캐시 삭제 실패 %s: %s", body_file, exc)
     # context_today 임시 CSV 폴더 정리
-    tmp_dir = Path("data/_tmp_csv")
+    tmp_dir = BASE_DIR / "data/_tmp_csv"
     if tmp_dir.exists():
         for item in tmp_dir.glob("*"):
             try:
@@ -425,8 +426,7 @@ def cleanup_cache() -> None:
 
 def main() -> None:
     """그래프 실행 진입점."""
-    # .env 로드 (없을 경우 무시)
-    load_dotenv()
+    _load_env()
 
     workflow = build_graph()
     # 빈 상태로 시작하여 컨텍스트 로드 → 대본 생성 순으로 실행
@@ -435,7 +435,7 @@ def main() -> None:
     # 최종 State 출력
     print("\n=== 오프닝 대본 결과 ===\n")
     
-    themes = result.get("theme", [])
+    themes = result.get("themes", [])
     nutshell = result.get("nutshell", "")
     scripts = result.get("scripts", [])
     

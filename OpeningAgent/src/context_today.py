@@ -17,13 +17,16 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 import pytz
 import yfinance as yf
+from dotenv import load_dotenv
 
 
 logger = logging.getLogger(__name__)
 KST = pytz.timezone("Asia/Seoul")
 ET = pytz.timezone("America/New_York")
+BASE_DIR = Path(__file__).resolve().parent.parent  # OpeningAgent/
+ROOT_DIR = BASE_DIR.parent
 
-CONTEXT_DIR = Path("data")
+CONTEXT_DIR = BASE_DIR / "data"
 TMP_DIR = CONTEXT_DIR / "_tmp_csv"
 OUTPUT_JSON = CONTEXT_DIR / "market_context.json"
 
@@ -144,6 +147,11 @@ def _cleanup_tmp() -> None:
     # 컨텍스트 생성 후 임시 CSV 제거
     if TMP_DIR.exists():
         shutil.rmtree(TMP_DIR, ignore_errors=True)
+
+
+def _load_env() -> None:
+    """리포 루트 .env 로드 (독립 실행 시 사용)."""
+    load_dotenv(ROOT_DIR / ".env", override=False)
 
 
 def _fetch_daily_frame(ticker: str, days: int = 5) -> pd.DataFrame:
@@ -353,6 +361,7 @@ def build_context() -> Dict[str, Any]:
 
 
 def main() -> None:
+    _load_env()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     context = build_context()
     OUTPUT_JSON.write_text(json.dumps(context, indent=2), encoding="utf-8")

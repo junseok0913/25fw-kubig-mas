@@ -17,14 +17,17 @@ from typing import Any, Dict, List, Optional
 
 import pytz
 from boto3.dynamodb.conditions import Key
+from dotenv import load_dotenv
 
 from src.utils.aws_utils import get_dynamo_table
 
 logger = logging.getLogger(__name__)
 
 ET = pytz.timezone("America/New_York")
+BASE_DIR = Path(__file__).resolve().parent.parent  # OpeningAgent/
+ROOT_DIR = BASE_DIR.parent  # repo root
 
-DATA_DIR = Path("data/opening")
+DATA_DIR = BASE_DIR / "data/opening"
 NEWS_LIST_PATH = DATA_DIR / "news_list.json"
 TITLES_PATH = DATA_DIR / "titles.txt"
 BODIES_DIR = DATA_DIR / "bodies"
@@ -62,6 +65,11 @@ def _to_utc_ms(dt_et: datetime) -> int:
 def _partition_keys(today: date) -> List[str]:
     """TODAY 포함 최근 3일 UTC 파티션 키를 생성한다."""
     return [f"UTC#{(today - timedelta(days=offset)).isoformat()}" for offset in range(0, 3)]
+
+
+def _load_env() -> None:
+    """리포 루트 .env를 로드한다 (독립 실행 시 필요)."""
+    load_dotenv(ROOT_DIR / ".env", override=False)
 
 
 def _normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
@@ -118,6 +126,7 @@ def prefetch_news(
     today: Optional[date] = None,
 ) -> Dict[str, Any]:
     """DynamoDB에서 뉴스 메타데이터를 조회해 로컬 캐시에 저장한다."""
+    _load_env()
     _ensure_dirs()
     table = get_dynamo_table(table_name or os.getenv("NEWS_TABLE", "kubig-YahoofinanceNews"), profile_name, region_name)
 

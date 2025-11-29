@@ -13,8 +13,9 @@ from langchain_core.tools import tool
 from src.utils import get_s3_client
 
 logger = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # OpeningAgent/
 
-DATA_DIR = Path("data/opening")
+DATA_DIR = BASE_DIR / "data/opening"
 NEWS_LIST_PATH = DATA_DIR / "news_list.json"
 TITLES_PATH = DATA_DIR / "titles.txt"
 BODIES_DIR = DATA_DIR / "bodies"
