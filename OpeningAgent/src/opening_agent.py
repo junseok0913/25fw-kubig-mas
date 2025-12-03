@@ -326,7 +326,7 @@ def extract_script_node(state: OpeningState) -> OpeningState:
     # JSON 파싱
     parsed = _parse_json_from_response(raw_content)
     
-    themes = parsed.get("themes") or parsed.get("theme", [])  # 프롬프트 키 혼용 대응
+    themes = parsed.get("themes", [])
     nutshell = parsed.get("nutshell", "")
     scripts = parsed.get("scripts", [])
     
