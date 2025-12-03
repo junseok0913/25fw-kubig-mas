@@ -1,8 +1,8 @@
 {
-  "theme": [
+  "themes": [
     {
-      "headline": "연준 12월 인하 베팅 랠리",
-      "description": "연속된 부진한 9월 소매판매와 생산자물가(PPI) 지표, 그리고 윌리엄스·데일리 등 연준 인사들의 완화적 발언이 겹치면서 시장은 12월 FOMC에서 25bp 금리인하를 80% 이상 확률로 반영하고 있습니다. 이에 따라 다우, S&P500, 나스닥이 3거래일째 상승 랠리를 이어갔고, 특히 금리 민감한 러셀2000이 대형주보다 더 강하게 오르며 '완화 수혜주'로 자금이 이동하는 모습입니다. 동시에 연준 내부에서는 물가 압력과 고용 둔화 사이에서 우선순위를 두고 의견이 갈리며, 이번 인하가 경기 부양과 인플레이션 리바운드 사이의 줄타기가 될 수 있다는 경계도 공존합니다. 정부 셧다운으로 일부 핵심 지표 발표가 늦어지면서 연준이 '데이터의 안개' 속에서 결정을 내려야 한다는 점 역시 시장이 주목하는 변수입니다.",
+      "headline": "연준 인하 기대와 3일째 증시 랠리",
+      "description": "연방준비제도의 12월 기준금리 인하 가능성이 급부상하면서 다우, S&P 500, 나스닥은 3거래일 연속 상승 랠리를 이어갔고, 금리에 민감한 러셀2000 중소형주 지수는 2%를 넘게 뛰었습니다. 정부 셧다운으로 지표 공백이 이어지는 가운데, 9월 소매판매와 생산자물가가 시장 예상보다 부진하게 나오며 경기 둔화 신호가 강해진 점도 완화적 통화정책 기대를 키웠습니다. 연준 내부에서도 인하 속도를 두고 의견이 갈리지만, 윌리엄스·데일리 등 핵심 인사들이 ‘단기 추가 인하 여지’를 언급하고, 미란 위원이 현 수준의 금리가 실업률 상승을 부른다며 더 빠른 인하를 주장한 것이 기대를 뒷받침했습니다. 선물시장에서 12월 25bp 인하 확률이 80% 안팎까지 치솟으면서, 시장은 ‘연준 피벗’에 다시 베팅하는 모습입니다.",
       "related_news": [
         {
           "pk": "id#ddbd68211fb4e7c7",
@@ -15,6 +15,10 @@
         {
           "pk": "id#c3d0b57fec57c80d",
           "title": "Does September Sales Data Boost the Chances of a Fed Interest Rate Cut?"
+        },
+        {
+          "pk": "id#160638e859799937",
+          "title": "Fed's Miran ties rising unemployment to current setting of monetary policy - Fox Business"
         },
         {
           "pk": "id#a2924ac4e4d56b7f",
@@ -23,8 +27,8 @@
       ]
     },
     {
-      "headline": "AI 빅테크 재질주 vs 버블논쟁",
-      "description": "AI 모멘텀 속에서 구글 모회사 알파벳은 자체 AI 칩과 제미나이 모델 기대를 앞세워 시가총액 4조 달러 돌파를 눈앞에 두며 '잠에서 깨어난 거인'으로 평가받고, 애플과 함께 지수 상승을 주도했습니다. 전일에 이어 테슬라, 브로드컴 등 AI 수혜주들이 동반 강세를 보이면서 최근 조정을 받았던 'AI 트레이드'에 다시 매수세가 유입되는 흐름입니다. 반면 마이클 버리와 일부 대형 헤지펀드는 엔비디아·팔란티어 등에 대한 공매도와 AI 비중 축소로 과열을 경고하고, 엔비디아는 '우리는 엔론이 아니다'라며 회계·수요 우려를 정면 반박하는 등 버블 논쟁도 거세지고 있습니다. 결과적으로 AI는 여전히 시장 랠리의 중심이지만, 성장 스토리와 밸류에이션 리스크가 동시에 가격에 반영되는 국면으로 보입니다.",
+      "headline": "AI 재점화, 구글 질주·엔비디아 논쟁",
+      "description": "AI 관련 빅테크가 다시 시장을 주도하면서 구글 모회사 알파벳은 AI 투자 기대를 앞세워 4조 달러 시가총액 돌파를 눈앞에 두고 있습니다. 메타가 수십억 달러 규모로 구글의 AI 전용 칩 TPU 도입을 검토한다는 보도와, 젬마이니 3 등 구글의 최신 모델이 호평을 받으면서 ‘잠자는 거인’이었던 구글이 AI 레이스의 전면에 나섰다는 평가가 나옵니다. 반면 AI 붐의 대표주자 엔비디아는 구글·메타의 칩 협상 소식과 함께 마이클 버리의 대규모 공매도, ‘버블’ 논란에 직면했고, 회사는 직접 메모를 보내 “우리는 엔론이 아니다”라며 회계·수요 우려를 강하게 반박했습니다. 그럼에도 UBS 등은 “AI 성장 스토리가 향후 랠리를 지탱할 것”이라고 보며, 챗GPT 등장 이후 3년간 이어진 AI 매니아가 여전히 이번 강세장의 핵심 테마임을 재확인한 하루였습니다.",
       "related_news": [
         {
           "pk": "id#f20b835df2439b4a",
@@ -35,34 +39,84 @@
           "title": "Google, the Sleeping Giant in Global AI Race, Now ‘Fully Awake’"
         },
         {
-          "pk": "id#e952862f4803c381",
-          "title": "Big Tech Stocks Power Markets Higher Monday. Is the AI Trade Making a Comeback?"
+          "pk": "id#3dd3e2efab676ad1",
+          "title": "Nvidia shares slip as AI accelerator race shifts interest to Google chips"
+        },
+        {
+          "pk": "id#dd6ff04b9769e3df",
+          "title": "Nvidia stock falls after report says Google, Meta in talks for multibillion-dollar AI chip deal"
+        },
+        {
+          "pk": "id#b04eb5c3bd1a9ceb",
+          "title": "Why Michael Burry is shorting Nvidia amid the AI frenzy"
         },
         {
           "pk": "id#1567c4e222a95fd1",
           "title": "‘We are not Enron’: Nvidia rejects AI bubble fears"
         },
         {
-          "pk": "id#74535eae31c49f1f",
-          "title": "Michael Burry, Peter Thiel, more investors bet against AI boom"
+          "pk": "id#692bab46bf0aa452",
+          "title": "Three Years of AI Mania: How ChatGPT Reordered the Stock Market"
+        },
+        {
+          "pk": "id#e952862f4803c381",
+          "title": "Big Tech Stocks Power Markets Higher Monday. Is the AI Trade Making a Comeback?"
+        },
+        {
+          "pk": "id#ddbd68211fb4e7c7",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rally for 3rd day as Fed rate cut hopes grow, Apple and Alphabet notch records"
         }
       ]
     },
     {
-      "headline": "비트코인·금·유가, 금리 전환의 단면",
-      "description": "비트코인은 한때 고점 대비 30% 넘게 밀린 뒤 최근 8만 달러대 초반에서 후반으로 되돌리며, 월말 133억 달러 규모 옵션만기와 대규모 쇼트 포지션 청산 가능성을 둘러싼 공방 속에 변동성을 키우고 있습니다. 옵션 시장에서는 풋·콜 양쪽에 방대한 미결제약정이 쌓여 있어, 8만7천 달러 선을 상회하는 추가 반등 시 쇼트 스퀴즈가 촉발될 수 있다는 분석도 나옵니다. 동시에 연준의 금리 인하 기대는 금 가격을 3% 안팎 급등시키며 연중 최고 수준 근처로 끌어올렸고, 올해 금은 중앙은행 매수와 ETF 자금 유입에 힘입어 1979년 이후 최고의 연간 수익률을 향해 가고 있습니다. 반대로 유가는 우크라이나 평화협상 진전과 공급과잉 우려가 부각되며 배럴당 50달러 후반대로 내려앉아, 지정학 리스크 프리미엄이 빠지는 모습을 보였습니다. 이처럼 위험자산인 크립토와 전통적 안전자산인 금, 그리고 경기 민감한 유가가 모두 연준의 정책 전환과 지정학 변화에 민감하게 반응한 하루였습니다.",
+      "headline": "금·은 랠리와 유가 약세, 완화·평화가 부른 자산 선회",
+      "description": "금 가격은 전일 연준 월러 이사의 12월 금리인하 지지 발언 이후 급등한 뒤 고점 부근에서 숨 고르기에 들어갔고, 은 선물은 단기 과열 수준까지 치솟았습니다. 금과 은의 동반 랠리는 무이자 자산인 귀금속이 낮아질 금리와 장기 인플레이션 헤지 수단으로 다시 부각되고 있음을 보여줍니다. 반대로 유가는 우크라이나가 미국 중재 평화안에 합의했다는 소식과 함께 제재 완화에 따른 러시아산 공급 증가 기대가 겹치며 배럴당 60달러 아래로 밀렸고, JP모건·텔레그래프 등은 향후 몇 년간 공급 과잉으로 20년래 저가까지도 경고하고 있습니다. 금리 인하 기대와 지정학 완화가 동시에 작용하며, 인플레이션 압력은 줄고 위험자산 선호는 높아지는 한편, 원자재 내에서도 금·은과 유가의 희비가 엇갈린 하루였습니다.",
       "related_news": [
         {
-          "pk": "id#6f2a23aa10c3a9b3",
-          "title": "Bitcoin Has Regained Some Ground. Strategy's Michael Saylor 'Won't Back Down'"
+          "pk": "id#b35aeba547948385",
+          "title": "Gold Steadies After Jump Fueled by Rising Bets on US Rate Cut"
         },
         {
-          "pk": "id#639deb38088996b1",
-          "title": "Bitcoin Faces $13.3B Monthly Options Expiry as BTC Trades Well Below Max Pain"
+          "pk": "id#37460db90a8af72f",
+          "title": "BC-Gold-Silver"
         },
         {
-          "pk": "id#b7d2f036a7143618",
-          "title": "Bitcoin Faces Short Squeeze Risk Above $87K as Funding Rates Hint Local Bottom"
+          "pk": "id#04614e682dbeb63c",
+          "title": "Oil Retreats as Traders Track Progress in Ukraine Peace Talks"
+        },
+        {
+          "pk": "id#4c2b0314eb9f5960",
+          "title": "Oil Prices Sink as Ukraine Agrees to Peace Deal"
+        },
+        {
+          "pk": "id#f30b2e983e247052",
+          "title": "Oil glut predicted to drive prices down to 20-year low"
+        },
+        {
+          "pk": "id#7a98f3755eedf844",
+          "title": "JPMorgan says oil prices could crash more than 50% in the next 2 years"
+        },
+        {
+          "pk": "id#ddbd68211fb4e7c7",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rally for 3rd day as Fed rate cut hopes grow, Apple and Alphabet notch records"
+        }
+      ]
+    }
+  ],
+  "nutshell": "연준 12월 인하 기대에 빅테크·중소형 동반 랠리, AI와 금은 뜨고 유가는 식었다",
+  "scripts": [
+    {
+      "speaker": "진행자",
+      "text": "{11월 25일} 장마감 브리핑입니다. 오늘 뉴욕증시는 다우와 S&P 500, 나스닥까지 모두 상승 흐름을 이어가며 3거래일 연속 반등세를 보였는데요. 어떤 힘이 시장을 이렇게 끌어올렸는지, 큰 그림부터 짚어주시죠.",
+      "sources": []
+    },
+    {
+      "speaker": "해설자",
+      "text": "오늘 시장을 한마디로 정리하면, '연준 12월 인하 기대에 빅테크·중소형 동반 랠리, AI와 금은 뜨고 유가는 식었다' 정도로 볼 수 있습니다. 연준의 12월 금리인하 확률이 선물시장에서 80% 안팎까지 올라가면서 다우와 S&P 500, 나스닥이 모두 오르고, 특히 러셀2000 중소형주가 2%대 급등하는 등 폭넓은 랠리가 나왔습니다. 동시에 금은 전날 급등 이후 고점 부근에서 버티는 반면, 우크라이나 평화안 진전과 공급 과잉 우려로 유가는 배럴당 60달러 아래로 밀리며 자산군별 온도차도 분명히 드러났습니다. 이런 흐름이 모두 ‘연준 완화 전환’과 ‘지정학 완화’라는 공통 축 위에서 움직였다는 점이 오늘 장의 핵심입니다.",
+      "sources": [
+        {
+          "pk": "id#ddbd68211fb4e7c7",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rally for 3rd day as Fed rate cut hopes grow, Apple and Alphabet notch records"
         },
         {
           "pk": "id#b35aeba547948385",
@@ -77,23 +131,16 @@
           "title": "Oil Prices Sink as Ukraine Agrees to Peace Deal"
         }
       ]
-    }
-  ],
-  "nutshell": "12월 연준 금리인하 기대에 3일째 랠리, AI 빅테크·비트코인·금이 동반 점프한 날",
-  "scripts": [
+    },
     {
       "speaker": "진행자",
-      "text": "{11월 25일} 장마감 브리핑입니다. 오늘 미국 증시는 주요 지수 모두 1% 안팎 상승하면서 3거래일째 랠리를 이어갔습니다. 연준의 12월 금리인하 기대와 함께 AI 빅테크, 비트코인, 금까지 눈에 띄는 흐름을 보였는데요, 오늘 시장을 한마디로 정리해 주시죠.",
+      "text": "말씀하신 대로 연준이 12월에 실제로 금리를 내릴지, 그리고 그 강도가 어느 정도일지가 시장의 최대 관심사인데요. 지표는 둔화 신호를 보내는데 연준 내부에서는 아직 의견이 엇갈린다는 이야기도 들립니다. 오늘 나온 연준 관련 발언과 지표를 중심으로, 이번 랠리가 얼마나 힘을 받을 수 있을지 짚어주시죠.",
       "sources": []
     },
     {
       "speaker": "해설자",
-      "text": "오늘 시장 한마디로 정리하면, '12월 연준 금리인하 기대에 3일째 랠리, AI 빅테크·비트코인·금이 동반 점프한 날'입니다. 연준 내부는 여전히 물가와 고용을 놓고 갈려 있지만, 부진한 9월 소매판매·생산자물가와 윌리엄스·데일리 등 위원들의 완화적 발언이 겹치면서 시장은 12월 25bp 인하 가능성을 80% 이상으로 쳐다보고 있습니다. 이런 기대 속에 다우와 S&P, 나스닥이 모두 강세를 이어갔고, 특히 금리 민감한 러셀2000과 금 가격이 크게 뛰면서 '완화 전환'에 베팅하는 자금이 넓게 퍼지는 모습입니다.",
+      "text": "연준 안팎에서는 ‘인하냐, 동결이냐’를 두고 이례적으로 공개적인 이견이 드러나고 있습니다. 한편에선 물가가 목표치보다 여전히 1%포인트가량 높은 상황이라 인하에 신중해야 한다는 시각이 있고, 다른 한편에선 9월 소매판매와 생산자물가가 예상보다 약하고 실업률이 서서히 올라가는 만큼 고금리를 더 끌고 가기 어렵다는 주장이 커지고 있죠. 미란 연준 이사는 현재의 긴축 수준이 실업률 상승을 부르고 있다며 “빠른 속도의 추가 인하”를 공개적으로 요구했고, 윌리엄스·데일리 등 의장과 가까운 인사들도 ‘단기 추가 조정 여지’를 언급하면서 시장의 인하 베팅에 힘을 실어줬습니다. 다만 정부 셧다운 여파로 10월·11월 고용·물가 같은 핵심 지표가 연준 회의 이후에야 나오는 ‘데이터 블랙아웃’ 상황이라, 이런 기대가 실제 결정으로 이어질지 여부가 향후 변동성의 핵심 변수가 될 전망입니다.",
       "sources": [
-        {
-          "pk": "id#ddbd68211fb4e7c7",
-          "title": "Stock market today: Dow, S&P 500, Nasdaq rally for 3rd day as Fed rate cut hopes grow, Apple and Alphabet notch records"
-        },
         {
           "pk": "id#cf11237bfd88e480",
           "title": "The Fed is divided over cutting interest rates. Here's why that matters"
@@ -103,23 +150,27 @@
           "title": "Does September Sales Data Boost the Chances of a Fed Interest Rate Cut?"
         },
         {
-          "pk": "id#da324bc309b93992",
-          "title": "Asian shares mixed after Wall Street gets a lift from hopes for a Fed rate cut"
+          "pk": "id#160638e859799937",
+          "title": "Fed's Miran ties rising unemployment to current setting of monetary policy - Fox Business"
         },
         {
-          "pk": "id#b35aeba547948385",
-          "title": "Gold Steadies After Jump Fueled by Rising Bets on US Rate Cut"
+          "pk": "id#a2924ac4e4d56b7f",
+          "title": "No Jobs Data, No Fed Meeting? The Central Bank's December Interest Rate Decision Just Got Harder"
+        },
+        {
+          "pk": "id#ddbd68211fb4e7c7",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rally for 3rd day as Fed rate cut hopes grow, Apple and Alphabet notch records"
         }
       ]
     },
     {
       "speaker": "진행자",
-      "text": "말씀하신 대로 완화 기대가 시장을 이끄는 가운데, 오늘은 특히 구글, 애플 같은 AI 빅테크가 지수를 끌어올린 반면 엔비디아를 둘러싼 버블 논쟁도 이어졌습니다. AI 랠리가 다시 2막에 들어선 건지, 아니면 과열 논란이 커지는 구간인지가 궁금한데요, 오늘 뉴스 흐름은 어땠습니까?",
+      "text": "이 와중에 시장의 화살표를 가장 강하게 당긴 쪽은 역시 AI와 빅테크였습니다. 특히 구글을 중심으로 한 AI 모멘텀은 강했고, 엔비디아를 둘러싼 ‘버블 논란 vs. 반박’ 공방도 이어졌는데요. 오늘 AI 관련 흐름이 어떻게 전개됐는지, 그리고 투자자들이 어디에 더 무게를 두고 있는지 정리해주시죠.",
       "sources": []
     },
     {
       "speaker": "해설자",
-      "text": "AI 쪽에서는 알파벳이 자체 AI 칩과 제미나이 모델을 앞세워 시가총액 4조 달러에 근접하는 등 '잠에서 깨어난 거인'처럼 평가받으면서, 나스닥과 S&P 상승분 상당 부분을 책임졌습니다. 동시에 버블을 경고하며 엔비디아와 팔란티어를 공매도하는 마이클 버리, AI 익스포저를 줄이는 대형 헤지펀드들, 그리고 '우리는 엔론이 아니다'라며 회계·수요 우려를 정면 반박한 엔비디아의 입장까지, AI 성장 스토리와 밸류에이션 논쟁이 정면으로 부딪히는 국면입니다. 이런 가운데 비트코인은 최근 급락에서 8만 달러대 후반까지 되돌리며 옵션만기와 쇼트 스퀴즈 가능성을 둘러싼 공방이 이어지고, 금은 연준 완화 베팅을 타고 올해 최고 수준 근처까지 치솟는 한편 유가는 우크라이나 평화협상 진전 소식에 50달러 후반대로 밀리는 등 위험자산과 안전자산이 모두 '금리 인하'라는 같은 재료에 반응하고 있습니다. 잠시 뒤에는 지수·금리·달러 흐름을 먼저 정리해 드리고, 이어서 AI 빅테크와 리테일 실적, 그리고 크립토까지 섹터별로 나눠 자세히 짚어보겠습니다.",
+      "text": "알파벳은 자체 AI 칩과 젬마이니 3 모델에 대한 기대를 발판으로 시가총액 4조 달러를 목전에 두며 ‘AI 수혜 1선’으로 완전히 복귀한 모습입니다. 메타가 2027년부터 구글의 TPU를 수십억 달러 규모로 도입하는 방안을 논의 중이라는 보도, 그리고 구글을 AI 레이스의 ‘잠에서 깨어난 거인’이라고 평가하는 기사들이 이어지면서, AI 인프라 판에서 구글과 엔비디아가 동시에 존재감을 키우는 구도가 부각됐습니다. 다만 엔비디아는 이 같은 경쟁 심화 기대 속에 주가가 흔들리고 있고, 마이클 버리가 수억 달러 규모의 풋옵션으로 ‘AI 버블’을 정면으로 겨냥하자, 회사가 직접 “우리는 엔론이 아니다”라며 회계·수요 논란을 반박하는 메모까지 내놓았습니다. 그럼에도 UBS 등은 “AI 성장 스토리가 앞으로도 증시 랠리를 지탱할 것”이라고 평가하고 있고, 챗GPT 출시 후 3년간 이어진 AI 매니아가 이번 강세장의 핵심 축이라는 점에서, 향후에도 AI 관련 빅테크와 반도체가 시장 방향성을 좌우할 가능성이 큽니다.",
       "sources": [
         {
           "pk": "id#f20b835df2439b4a",
@@ -130,42 +181,39 @@
           "title": "Google, the Sleeping Giant in Global AI Race, Now ‘Fully Awake’"
         },
         {
-          "pk": "id#e952862f4803c381",
-          "title": "Big Tech Stocks Power Markets Higher Monday. Is the AI Trade Making a Comeback?"
+          "pk": "id#3dd3e2efab676ad1",
+          "title": "Nvidia shares slip as AI accelerator race shifts interest to Google chips"
+        },
+        {
+          "pk": "id#dd6ff04b9769e3df",
+          "title": "Nvidia stock falls after report says Google, Meta in talks for multibillion-dollar AI chip deal"
+        },
+        {
+          "pk": "id#b04eb5c3bd1a9ceb",
+          "title": "Why Michael Burry is shorting Nvidia amid the AI frenzy"
         },
         {
           "pk": "id#1567c4e222a95fd1",
           "title": "‘We are not Enron’: Nvidia rejects AI bubble fears"
         },
         {
-          "pk": "id#74535eae31c49f1f",
-          "title": "Michael Burry, Peter Thiel, more investors bet against AI boom"
+          "pk": "id#692bab46bf0aa452",
+          "title": "Three Years of AI Mania: How ChatGPT Reordered the Stock Market"
         },
         {
-          "pk": "id#6f2a23aa10c3a9b3",
-          "title": "Bitcoin Has Regained Some Ground. Strategy's Michael Saylor 'Won't Back Down'"
+          "pk": "id#e952862f4803c381",
+          "title": "Big Tech Stocks Power Markets Higher Monday. Is the AI Trade Making a Comeback?"
         },
         {
-          "pk": "id#639deb38088996b1",
-          "title": "Bitcoin Faces $13.3B Monthly Options Expiry as BTC Trades Well Below Max Pain"
-        },
-        {
-          "pk": "id#b7d2f036a7143618",
-          "title": "Bitcoin Faces Short Squeeze Risk Above $87K as Funding Rates Hint Local Bottom"
-        },
-        {
-          "pk": "id#b35aeba547948385",
-          "title": "Gold Steadies After Jump Fueled by Rising Bets on US Rate Cut"
-        },
-        {
-          "pk": "id#04614e682dbeb63c",
-          "title": "Oil Retreats as Traders Track Progress in Ukraine Peace Talks"
-        },
-        {
-          "pk": "id#4c2b0314eb9f5960",
-          "title": "Oil Prices Sink as Ukraine Agrees to Peace Deal"
+          "pk": "id#ddbd68211fb4e7c7",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rally for 3rd day as Fed rate cut hopes grow, Apple and Alphabet notch records"
         }
       ]
+    },
+    {
+      "speaker": "진행자",
+      "text": "정리해보면 연준 인하 기대를 축으로 AI 빅테크, 중소형주, 그리고 금까지 위험·안전자산이 동시에 움직인 날이었습니다. 이어지는 본 방송에서는 금·유가 흐름이 인플레이션과 경기, 그리고 섹터별 투자 전략에 어떤 영향을 줄지, 또 AI 수혜·피해 업종을 어떻게 구분해야 할지 하나씩 짚어드리겠습니다.",
+      "sources": []
     }
   ]
 }
