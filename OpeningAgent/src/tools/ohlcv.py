@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, date, timedelta
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pandas as pd
 import yfinance as yf
@@ -40,76 +40,83 @@ def _parse_today() -> date:
     return datetime.utcnow().date()
 
 
-def _period_to_days(period: str) -> int:
-    """yfinance period 문자열을 일수로 근사."""
-    mapping = {
-        "1d": 1,
-        "5d": 5,
-        "1mo": 30,
-        "3mo": 90,
-        "6mo": 180,
-        "1y": 365,
-        "2y": 730,
-        "5y": 1825,
-        "10y": 3650,
-    }
-    if period == "ytd":
-        anchor = _parse_today()
-        start = date(anchor.year, 1, 1)
-        return (anchor - start).days + 1
-    return mapping.get(period, 30)
+def _parse_date(date_str: str) -> date:
+    """YYYY-MM-DD 형식의 문자열을 date로 파싱."""
+    return datetime.strptime(date_str, "%Y-%m-%d").date()
 
 
 @tool
-def get_ohlcv(ticker: str, period: str = "1mo", interval: str = "1d") -> Dict[str, Any]:
+def get_ohlcv(
+    ticker: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    interval: str = "1d",
+) -> Dict[str, Any]:
     """yfinance를 통해 과거 OHLCV(시가/고가/저가/종가/거래량) 데이터를 조회한다.
 
     Args:
         ticker: Yahoo Finance 티커 (예: "NVDA", "^GSPC", "CL=F")
-        period: 조회 기간 ("1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max")
+        start_date: 조회 시작일 (YYYY-MM-DD 형식, 미지정 시 end_date 기준 30일 전)
+        end_date: 조회 종료일 (YYYY-MM-DD 형식, 미지정 시 환경변수 TODAY 또는 오늘)
         interval: 봉 간격 ("1m", "5m", "15m", "30m", "1h", "1d", "1wk", "1mo")
 
     Returns:
-        {ticker, period, interval, rows[{ts, open, high, low, close, volume}]}
+        {ticker, start_date, end_date, interval, rows[{ts, open, high, low, close, volume}]}
     """
-    anchor = _parse_today()
-    days = _period_to_days(period)
-    end_date = anchor + timedelta(days=1)  # end는 비포 방식, 당일 포함
-    start_date = end_date - timedelta(days=days)
+    # end_date 결정: 미지정 시 TODAY 환경변수 또는 시스템 날짜
+    if end_date:
+        end_dt = _parse_date(end_date)
+    else:
+        end_dt = _parse_today()
+
+    # start_date 결정: 미지정 시 end_date 기준 30일 전
+    if start_date:
+        start_dt = _parse_date(start_date)
+    else:
+        start_dt = end_dt - timedelta(days=30)
+
+    # yfinance end는 exclusive이므로 +1일
+    yf_end = end_dt + timedelta(days=1)
 
     logger.info(
-        "get_ohlcv 호출: ticker=%s, period=%s(%sd), interval=%s, start=%s, end=%s",
+        "get_ohlcv 호출: ticker=%s, start=%s, end=%s, interval=%s",
         ticker,
-        period,
-        days,
+        start_dt,
+        end_dt,
         interval,
-        start_date,
-        end_date,
     )
 
     df = yf.download(
         ticker,
-        start=start_date.isoformat(),
-        end=end_date.isoformat(),
+        start=start_dt.isoformat(),
+        end=yf_end.isoformat(),
         interval=interval,
         progress=False,
         auto_adjust=False,
         threads=False,
     )
     df = _normalize(df)
+
+    result_base = {
+        "ticker": ticker,
+        "start_date": start_dt.isoformat(),
+        "end_date": end_dt.isoformat(),
+        "interval": interval,
+    }
+
     if df.empty:
         logger.warning("OHLCV 결과가 비어 있습니다: %s", ticker)
-        return {"ticker": ticker, "period": period, "interval": interval, "rows": []}
+        return {**result_base, "rows": []}
 
     # 사용할 수 있는 컬럼만으로 NaN 행 제거
     cols = [c for c in ["Open", "High", "Low", "Close", "Volume"] if c in df.columns]
     if not cols:
         logger.warning("OHLCV 컬럼이 부족합니다: %s", df.columns)
-        return {"ticker": ticker, "period": period, "interval": interval, "rows": []}
+        return {**result_base, "rows": []}
     df = df.dropna(subset=cols, how="all")
     if df.empty:
         logger.warning("OHLCV 유효 행이 없습니다(모두 NaN): %s", ticker)
-        return {"ticker": ticker, "period": period, "interval": interval, "rows": []}
+        return {**result_base, "rows": []}
 
     rows = []
     for idx, row in df.iterrows():
@@ -125,4 +132,4 @@ def get_ohlcv(ticker: str, period: str = "1mo", interval: str = "1d") -> Dict[st
         )
 
     logger.info("get_ohlcv 결과: %d개 행 반환", len(rows))
-    return {"ticker": ticker, "period": period, "interval": interval, "rows": rows}
+    return {**result_base, "rows": rows}

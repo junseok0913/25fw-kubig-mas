@@ -52,7 +52,7 @@ flowchart TD
 | `get_news_content` | same | `pks: list[str]`, `bucket: str \| None` | 캐시 조회 후 미스 시 S3(`NEWS_BUCKET`/`BUCKET_NAME`)에서 XML 다운로드+저장 |
 | `list_downloaded_bodies` | same | 입력 없음 | `data/opening/bodies/*.txt` 목록을 pk/title로 반환 |
 | `count_keyword_frequency` | same | `keywords: list[str]`, `source: "titles" \| "bodies"`, `news_pks: list[str] \| None` | `titles.txt` 또는 캐시된 본문에서 키워드 빈도 집계 |
-| `get_ohlcv` | `src/tools/ohlcv.py` | `ticker: str`, `period: str`, `interval: str` | yfinance 래퍼. 멀티인덱스 정규화 후 OHLCV 배열로 반환 |
+| `get_ohlcv` | `src/tools/ohlcv.py` | `ticker: str`, `start_date: str`, `end_date: str`, `interval: str` | yfinance 래퍼. 멀티인덱스 정규화 후 OHLCV 배열로 반환 |
 
 `prefetch_news`가 선행되어야 `titles.txt`/`news_list.json` 기반 Tool들이 정상 동작합니다.
 
@@ -178,14 +178,15 @@ flowchart TD
 - 요청 예시
 
 ```json
-{"ticker": "^GSPC", "period": "1mo", "interval": "1d"}
+{"ticker": "^GSPC", "start_date": "2025-10-25", "end_date": "2025-11-25", "interval": "1d"}
 ```
 - 응답 예시
 
 ```json
 {
   "ticker": "^GSPC",
-  "period": "1mo",
+  "start_date": "2025-10-25",
+  "end_date": "2025-11-25",
   "interval": "1d",
   "rows": [
     {"ts": "2025-11-20T00:00:00-05:00", "open": 5170.5, "high": 5188.2, "low": 5155.1, "close": 5180.3, "volume": 0},

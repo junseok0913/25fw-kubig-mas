@@ -212,7 +212,7 @@ e.g. 11/19 브리핑 → EST 11/18 16:00 ~ EST 11/19 17:30 (KST 11/20 07:30)
 
 | **Tool Name** | **기능** | **상세 설명** |
 | --- | --- | --- |
-| `get_ohlcv` | 과거 OHLCV 데이터 조회 | 에이전트가 **티커, 기간, interval**을 지정하여 과거 가격 데이터 조회 |
+| `get_ohlcv` | 과거 OHLCV 데이터 조회 | 에이전트가 **티커, 시작일, 종료일, interval**을 지정하여 과거 가격 데이터 조회 |
 
 ---
 
@@ -375,13 +375,14 @@ def count_keyword_frequency(
 
 ```python
 def get_ohlcv(
-    ticker: str,                    # 티커 심볼 (e.g., "NVDA", "^GSPC", "CL=F")
-    period: str = "1mo",            # 조회 기간
-    interval: str = "1d"            # 봉 간격
+    ticker: str,                          # 티커 심볼 (e.g., "NVDA", "^GSPC", "CL=F")
+    start_date: str | None = None,        # 조회 시작일 (YYYY-MM-DD)
+    end_date: str | None = None,          # 조회 종료일 (YYYY-MM-DD)
+    interval: str = "1d"                  # 봉 간격
 ) -> dict:
     """
     yfinance를 통해 과거 OHLCV(시가/고가/저가/종가/거래량) 데이터 조회
-    (에이전트가 필요시 티커, 기간, 봉을 직접 결정)
+    (에이전트가 필요시 티커, 날짜 범위, 봉을 직접 결정)
     
     Args:
         ticker: Yahoo Finance 티커 심볼 e.g.)
@@ -390,30 +391,37 @@ def get_ohlcv(
             - 원자재: "CL=F" (WTI), "GC=F" (Gold)
             - ETF: "SPY", "QQQ", "IWM"
         
-        period: 조회 기간 (start/end 대신 사용)
-            - "1d", "5d": 최근 1일, 5일
-            - "1mo", "3mo", "6mo": 최근 1/3/6개월
-            - "1y", "2y", "5y", "10y": 최근 1/2/5/10년
-            - "ytd": 연초부터 현재까지
-            - "max": 전체 기간
+        start_date: 조회 시작일 (YYYY-MM-DD 형식)
+            - 미지정 시 end_date 기준 30일 전
+            - 예: "2025-10-25"
+        
+        end_date: 조회 종료일 (YYYY-MM-DD 형식)
+            - 미지정 시 환경변수 TODAY 또는 오늘 날짜
+            - 예: "2025-11-25"
         
         interval: 봉(캔들스틱) 간격
             - 분봉: "1m", "5m", "15m", "30m" (최근 24시간 이내만 가능)
             - 시간봉: "1h" (최근 7일 이내만 가능)
             - 일봉: "1d"
             - 주봉: "1wk"
-            - 월봉: "1mo" (ytd, max 기간은 월봉만 허용)
+            - 월봉: "1mo"
     
-    Period-Interval 제약:
-        - period="1d": 분봉(1m~30m)만 가능
-        - period="5d", "1wk": 시간봉(1h) 이하만 가능
-        - period="1mo"~"10y": 일봉(1d) 이상만 가능
-        - period="max": 월봉(1mo)만 가능
-    
-    Note:
-        - 분봉(1m, 5m, 15m, 30m)은 최근 24시간 데이터만 제공
+    Interval 제약:
+        - 분봉(1m~30m)은 최근 24시간 데이터만 제공
         - 시간봉(1h)은 최근 7일 데이터만 제공
-        - max 기간은 월봉(1mo)만 조회 가능
+        - 장기간 데이터는 일봉(1d) 이상 권장
+    
+    Returns:
+        {
+            "ticker": "^GSPC",
+            "start_date": "2025-10-25",
+            "end_date": "2025-11-25",
+            "interval": "1d",
+            "rows": [
+                {"ts": "2025-10-25T00:00:00", "open": 5170.5, "high": 5188.2, "low": 5155.1, "close": 5180.3, "volume": 0},
+                ...
+            ]
+        }
     """
 ```
 

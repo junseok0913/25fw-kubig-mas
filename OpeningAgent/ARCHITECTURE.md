@@ -64,7 +64,7 @@ flowchart LR
 | `get_news_content` | S3에서 뉴스 본문 조회 또는 로컬 캐시 반환 |
 | `list_downloaded_bodies` | 로컬에 저장된 본문 파일 목록 반환 |
 | `count_keyword_frequency` | 제목/본문에서 키워드 출현 빈도 계산 |
-| `get_ohlcv` | yfinance로 과거 OHLCV 데이터 조회 |
+| `get_ohlcv` | yfinance로 과거 OHLCV 데이터 조회 (start_date, end_date 기반) |
 
 - `src/prefetch.py`: TODAY 기준 전일 16:00 ET ~ 당일 18:00 ET, 최근 3일 `gsi_utc_pk` 파티션을 DynamoDB `gsi_latest_utc`로 쿼리 → `data/opening/news_list.json`, `titles.txt`, `bodies/`.
 - `src/tools/news_tools.py`: `@tool` 데코레이터로 LangChain Tool 정의. 로컬 캐시 조회/필터링, S3 본문 다운로드+캐시, 다운로드된 본문 목록, 키워드 빈도 분석.

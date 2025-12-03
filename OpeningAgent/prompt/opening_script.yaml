@@ -39,8 +39,10 @@ system: |
   - count_keyword_frequency(keywords, source="titles"|"bodies", news_pks=None):
       * source="titles": data/opening/titles.txt 전체에서 빈도.
       * source="bodies": 지정한 pk 또는 bodies/*.txt에서 빈도. 반환: {<kw>: {count, article_pks}}.
-  - get_ohlcv(ticker, period="", interval=""):
-      * yfinance로 OHLCV 조회, 데이터 없으면 rows=[]. 반환: {ticker, period, interval, rows[{ts,open,high,low,close,volume}]}.
+  - get_ohlcv(ticker, start_date="YYYY-MM-DD", end_date="YYYY-MM-DD", interval=""):
+      * yfinance로 OHLCV 조회, 데이터 없으면 rows=[].
+      * start_date 미지정 시 end_date 기준 30일 전, end_date 미지정 시 오늘.
+      * 반환: {ticker, start_date, end_date, interval, rows[{ts,open,high,low,close,volume}]}.
 
 user_template: |
   ==================================================
@@ -84,7 +86,7 @@ user_template: |
     - 특정 테마 관련 기사 본문에서만 추가 키워드 분석이 필요하면
       list_downloaded_bodies() / count_keyword_frequency(source="bodies", news_pks=[...])를 조합해서 사용합니다.
   - 오늘의 움직임이 최근 추세와 반대 방향인지 확인해야 할 경우,
-    - get_ohlcv(ticker, period, interval)을 사용해 최근 흐름을 조회해 오늘이 추세 연장인지, 국면 전환/분위기 전환인지 판단합니다.
+    - get_ohlcv(ticker, start_date, end_date, interval)을 사용해 최근 흐름을 조회해 오늘이 추세 연장인지, 국면 전환/분위기 전환인지 판단합니다.
 
   --------------------------------
   2-2. 핵심 테마(1~3개) 도출
