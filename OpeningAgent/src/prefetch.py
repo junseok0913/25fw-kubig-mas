@@ -1,8 +1,11 @@
 """DynamoDB에서 뉴스 메타데이터를 사전 수집하는 유틸리티.
 
-- TODAY 환경변수(YYYYMMDD) 기준으로 전일 16:00 ET ~ 당일 18:00 ET 범위의 뉴스를 조회
-- gsi_utc_pk 파티션은 TODAY부터 3일치(오늘, 전일, 전전일)만 쿼리
+- 지정된 날짜 기준으로 전일 16:00 ET ~ 당일 18:00 ET 범위의 뉴스를 조회
+- gsi_utc_pk 파티션은 지정 날짜부터 3일치(오늘, 전일, 전전일)만 쿼리
 - 결과를 data/opening/news_list.json, titles.txt로 저장
+
+Note:
+    날짜는 orchestrator에서 CLI 인자로 받아 prefetch_news(today=...)로 전달됩니다.
 """
 
 from __future__ import annotations
@@ -39,14 +42,14 @@ def _ensure_dirs() -> None:
     BODIES_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _parse_today() -> date:
-    """TODAY 환경변수를 YYYYMMDD 형식으로 파싱한다."""
-    raw = os.getenv("TODAY", "20251125")
-    try:
-        return datetime.strptime(raw, "%Y%m%d").date()
-    except ValueError:
-        logger.warning("TODAY 형식이 잘못되었습니다(%s). 시스템 날짜로 대체합니다.", raw)
-        return datetime.now(tz=ET).date()
+def _get_current_et_date() -> date:
+    """현재 ET(미국 동부 시간) 날짜를 반환한다.
+    
+    Note:
+        이 함수는 prefetch_news()에 today 파라미터가 전달되지 않았을 때만 사용됩니다.
+        정상적인 실행에서는 orchestrator가 항상 날짜를 전달하므로 호출되지 않습니다.
+    """
+    return datetime.now(tz=ET).date()
 
 
 def _time_window_et(today: date) -> tuple[datetime, datetime]:
@@ -63,7 +66,7 @@ def _to_utc_ms(dt_et: datetime) -> int:
 
 
 def _partition_keys(today: date) -> List[str]:
-    """TODAY 포함 최근 3일 UTC 파티션 키를 생성한다."""
+    """지정 날짜 포함 최근 3일 UTC 파티션 키를 생성한다."""
     return [f"UTC#{(today - timedelta(days=offset)).isoformat()}" for offset in range(0, 3)]
 
 
@@ -130,7 +133,7 @@ def prefetch_news(
     _ensure_dirs()
     table = get_dynamo_table(table_name or os.getenv("NEWS_TABLE", "kubig-YahoofinanceNews"), profile_name, region_name)
 
-    today_date = today or _parse_today()
+    today_date = today or _get_current_et_date()
     start_et, end_et = _time_window_et(today_date)
     start_ms = _to_utc_ms(start_et)
     end_ms = _to_utc_ms(end_et)

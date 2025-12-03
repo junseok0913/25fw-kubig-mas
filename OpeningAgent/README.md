@@ -35,7 +35,7 @@ flowchart TD
 
 ## 노드 동작 요약
 
-- **prefetch_news → `prefetch_node`** (`src/prefetch.py`): `TODAY`를 기준으로 전일 16:00 ET ~ 당일 18:00 ET, 최근 3개 `gsi_utc_pk` 파티션을 `gsi_latest_utc`로 조회. 결과를 `data/opening/news_list.json`/`titles.txt`에 저장(캐시 실패 시 경고 후 진행).
+- **prefetch_news → `prefetch_node`** (`src/prefetch.py`): 지정된 날짜를 기준으로 전일 16:00 ET ~ 당일 18:00 ET, 최근 3개 `gsi_utc_pk` 파티션을 `gsi_latest_utc`로 조회. 결과를 `data/opening/news_list.json`/`titles.txt`에 저장(캐시 실패 시 경고 후 진행).
 - **load_context → `load_context_node`** (`src/context_today.py`): yfinance로 지수/채권/원자재/BTC 데이터를 수집해 `data/market_context.json`을 갱신. `titles.txt`에서 불용어(`config/stopwords.txt`)를 제외한 상위 단어 빈도(`title_top_words`, 기본 50개)를 컨텍스트에 주입.
 - **prepare_messages → `_prepare_initial_messages`**: `prompt/opening_script.yaml`을 읽어 system/user 메시지를 채움. `{{tools}}`는 사용 가능한 Tool 설명으로, `{{context_json}}`은 컨텍스트 JSON 문자열로 치환해 초기 메시지 2개를 구성.
 - **agent → `agent_node`**: OpenAI Chat 모델(`OPENAI_MODEL` 기본 `gpt-5.1`, `reasoning_effort` 기본 `medium`, `temperature` 기본 0.0)을 `TOOLS`로 바인딩해 호출. 응답 메시지를 상태에 추가.
@@ -198,13 +198,20 @@ flowchart TD
 ## 실행 방법
 
 ```bash
+# orchestrator를 통한 실행 (권장)
+python orchestrator.py 20251125
+python orchestrator.py 2025-11-25
+
+# OpeningAgent 단독 실행
 cd OpeningAgent
-python -m src.opening_agent  # 또는 python src/opening_agent.py
+python -m src.opening_agent 20251125
 ```
+
+**날짜 인자 (필수)**: YYYYMMDD 또는 YYYY-MM-DD 형식 (EST 기준)
 
 필수 환경변수:
 - OpenAI: `OPENAI_API_KEY` (옵션: `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_TEMPERATURE`)
-- AWS/뉴스: `AWS_SDK_LOAD_CONFIG=1`, `AWS_PROFILE`(기본 Admins), `AWS_REGION`, `NEWS_TABLE`, `NEWS_BUCKET`, `TODAY`
+- AWS/뉴스: `AWS_SDK_LOAD_CONFIG=1`, `AWS_PROFILE`(기본 Admins), `AWS_REGION`, `NEWS_TABLE`, `NEWS_BUCKET`
 - LangSmith(선택): `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`, `LANGCHAIN_ENDPOINT`
 
 실행 후 콘솔에 테마/한마디/대본이 요약되며, 결과 파일 저장 → 캐시 정리 순으로 종료됩니다.

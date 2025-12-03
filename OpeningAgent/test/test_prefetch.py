@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from decimal import Decimal
 
 
@@ -51,9 +52,9 @@ def test_prefetch_writes_files(tmp_path, monkeypatch):
     ]
     fake_table = _FakeTable(items)
     monkeypatch.setattr(prefetch, "get_dynamo_table", lambda *a, **k: fake_table)
-    monkeypatch.setenv("TODAY", "20251125")
 
-    result = prefetch.prefetch_news(table_name="dummy")
+    # today 파라미터로 날짜를 직접 전달 (환경변수 대신)
+    result = prefetch.prefetch_news(table_name="dummy", today=date(2025, 11, 25))
     assert result["count"] == 1
     assert (data_dir / "news_list.json").exists()
     saved = json.loads((data_dir / "news_list.json").read_text())

@@ -29,15 +29,23 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _parse_today() -> date:
-    """환경변수 TODAY(YYYYMMDD)를 날짜로 파싱."""
-    raw = os.getenv("TODAY")
-    if raw:
-        try:
-            return datetime.strptime(raw, "%Y%m%d").date()
-        except Exception:  # noqa: BLE001
-            logger.warning("TODAY 파싱 실패(%s), 시스템 날짜 사용", raw)
-    return datetime.utcnow().date()
+def _get_briefing_date() -> date:
+    """브리핑 날짜를 반환한다.
+    
+    orchestrator/opening_agent에서 설정한 BRIEFING_DATE 환경변수를 사용합니다.
+    이 환경변수가 없으면 ValueError를 발생시킵니다.
+    
+    Note:
+        BRIEFING_DATE는 orchestrator.py 또는 opening_agent.py에서 CLI 인자를 통해 설정됩니다.
+        에이전트가 end_date를 명시하지 않으면 이 날짜가 자동으로 사용됩니다.
+    """
+    briefing_date = os.environ.get("BRIEFING_DATE")
+    if not briefing_date:
+        raise ValueError(
+            "BRIEFING_DATE 환경변수가 설정되지 않았습니다. "
+            "orchestrator.py 또는 opening_agent.py를 통해 실행하세요."
+        )
+    return datetime.strptime(briefing_date, "%Y%m%d").date()
 
 
 def _parse_date(date_str: str) -> date:
@@ -57,17 +65,17 @@ def get_ohlcv(
     Args:
         ticker: Yahoo Finance 티커 (예: "NVDA", "^GSPC", "CL=F")
         start_date: 조회 시작일 (YYYY-MM-DD 형식, 미지정 시 end_date 기준 30일 전)
-        end_date: 조회 종료일 (YYYY-MM-DD 형식, 미지정 시 환경변수 TODAY 또는 오늘)
+        end_date: 조회 종료일 (YYYY-MM-DD 형식, 미지정 시 브리핑 날짜)
         interval: 봉 간격 ("1m", "5m", "15m", "30m", "1h", "1d", "1wk", "1mo")
 
     Returns:
         {ticker, start_date, end_date, interval, rows[{ts, open, high, low, close, volume}]}
     """
-    # end_date 결정: 미지정 시 TODAY 환경변수 또는 시스템 날짜
+    # end_date 결정: 미지정 시 브리핑 날짜 (orchestrator에서 입력받은 날짜)
     if end_date:
         end_dt = _parse_date(end_date)
     else:
-        end_dt = _parse_today()
+        end_dt = _get_briefing_date()
 
     # start_date 결정: 미지정 시 end_date 기준 30일 전
     if start_date:

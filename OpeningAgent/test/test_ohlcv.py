@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import pandas as pd
 
 from src.tools import ohlcv
@@ -42,11 +44,11 @@ def test_get_ohlcv_default_dates(monkeypatch):
         return df
 
     monkeypatch.setattr(ohlcv.yf, "download", fake_download)
-    # TODAY 환경변수 설정
-    monkeypatch.setenv("TODAY", "20251125")
+    # BRIEFING_DATE 환경변수 설정 (orchestrator에서 주입되는 것을 시뮬레이션)
+    monkeypatch.setenv("BRIEFING_DATE", "20251125")
 
     res = ohlcv.get_ohlcv.invoke({"ticker": "AAPL"})
     assert res["ticker"] == "AAPL"
-    assert res["end_date"] == "2025-11-25"  # TODAY 환경변수 기준
+    assert res["end_date"] == "2025-11-25"  # BRIEFING_DATE 기준
     assert res["start_date"] == "2025-10-26"  # 30일 전
     assert len(res["rows"]) == 1

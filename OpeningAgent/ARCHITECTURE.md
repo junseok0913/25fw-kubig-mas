@@ -1,6 +1,6 @@
 # Opening Agent 구조 정리
 
-현재 구현된 오프닝 에이전트의 구성요소와 흐름을 요약합니다. (TODAY=20251125, SSO 프로파일 기반)
+현재 구현된 오프닝 에이전트의 구성요소와 흐름을 요약합니다. (날짜는 CLI 인자로 전달, SSO 프로파일 기반)
 
 ## LangGraph 실행 플로우 (ReAct 패턴)
 
@@ -66,7 +66,7 @@ flowchart LR
 | `count_keyword_frequency` | 제목/본문에서 키워드 출현 빈도 계산 |
 | `get_ohlcv` | yfinance로 과거 OHLCV 데이터 조회 (start_date, end_date 기반) |
 
-- `src/prefetch.py`: TODAY 기준 전일 16:00 ET ~ 당일 18:00 ET, 최근 3일 `gsi_utc_pk` 파티션을 DynamoDB `gsi_latest_utc`로 쿼리 → `data/opening/news_list.json`, `titles.txt`, `bodies/`.
+- `src/prefetch.py`: 지정 날짜 기준 전일 16:00 ET ~ 당일 18:00 ET, 최근 3일 `gsi_utc_pk` 파티션을 DynamoDB `gsi_latest_utc`로 쿼리 → `data/opening/news_list.json`, `titles.txt`, `bodies/`.
 - `src/tools/news_tools.py`: `@tool` 데코레이터로 LangChain Tool 정의. 로컬 캐시 조회/필터링, S3 본문 다운로드+캐시, 다운로드된 본문 목록, 키워드 빈도 분석.
 - `src/tools/ohlcv.py`: `@tool` 데코레이터로 LangChain Tool 정의. yfinance 래퍼로 OHLCV 조회.
 - `src/utils/aws_utils.py`: SSO 프로파일 기반 boto3 세션/클라이언트 헬퍼.
@@ -79,7 +79,7 @@ flowchart LR
 ## 설정 및 추적
 
 - OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_TEMPERATURE`.
-- AWS/SSO: `AWS_SDK_LOAD_CONFIG=1`, `AWS_PROFILE=Admins`, `AWS_REGION`, `NEWS_TABLE`, `NEWS_BUCKET`, `TODAY`.
+- AWS/SSO: `AWS_SDK_LOAD_CONFIG=1`, `AWS_PROFILE=Admins`, `AWS_REGION`, `NEWS_TABLE`, `NEWS_BUCKET`.
 - LangSmith(LangChain tracing_v2): `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`, `LANGCHAIN_ENDPOINT`(선택).
 
 ## 테스트

@@ -101,6 +101,13 @@ def _load_stopwords() -> frozenset[str]:
     return frozenset(words)
 
 
+def _format_date_korean(date_yyyymmdd: str) -> str:
+    """YYYYMMDD를 '11월 25일' 형식의 한국어로 변환한다."""
+    from datetime import datetime
+    dt = datetime.strptime(date_yyyymmdd, "%Y%m%d")
+    return f"{dt.month}월 {dt.day}일"
+
+
 def _top_words_from_titles(limit: int = 30) -> list[dict[str, Any]]:
     """titles.txt에서 단어 빈도 상위 N개를 계산한다.
     
@@ -150,6 +157,9 @@ class ScriptTurn(TypedDict):
 class OpeningState(TypedDict, total=False):
     """그래프 상태 정의: 메시지 기반 ReAct 패턴.
     
+    공통 필드:
+        date: 브리핑 날짜 (YYYYMMDD 형식, EST 기준)
+    
     중간 처리용 필드:
         messages: ReAct 메시지 히스토리
         context_json: yfinance 시장 데이터
@@ -160,6 +170,9 @@ class OpeningState(TypedDict, total=False):
         nutshell: 오늘 장 한마디
         scripts: 진행자/해설자 대화
     """
+    # 공통: 날짜 (YYYYMMDD 형식, EST 기준)
+    date: str
+    
     # 중간 처리용
     messages: Annotated[Sequence[BaseMessage], add_messages]
     context_json: Dict[str, Any]
@@ -173,9 +186,16 @@ class OpeningState(TypedDict, total=False):
 
 def prefetch_node(state: OpeningState) -> OpeningState:
     """DynamoDB에서 뉴스 메타데이터를 사전 수집한다."""
+    date_str = state.get("date")
+    if not date_str:
+        raise ValueError("date 필드가 state에 없습니다. 날짜를 지정하세요.")
+    
     try:
-        payload = prefetch.prefetch_news()
-        logger.info("프리페치 완료: %d건", payload.get("count", 0))
+        # date를 prefetch_news에 전달
+        from datetime import datetime
+        date_obj = datetime.strptime(date_str, "%Y%m%d").date()
+        payload = prefetch.prefetch_news(today=date_obj)
+        logger.info("프리페치 완료: %d건 (날짜: %s)", payload.get("count", 0), date_str)
     except Exception as exc:  # noqa: BLE001
         logger.warning("프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
         payload = {}
@@ -196,7 +216,7 @@ def load_context_node(state: OpeningState) -> OpeningState:
     with open(CONTEXT_PATH, "r", encoding="utf-8") as f:
         context = json.load(f)
     logger.info("Loaded market context from %s", CONTEXT_PATH)
-    # 제목 상위 30개 단어 빈도 추가
+    # 제목 상위 50개 단어 빈도 추가
     context["title_top_words"] = _top_words_from_titles(limit=50)
     return {**state, "context_json": context}
 
@@ -244,17 +264,30 @@ def _prepare_initial_messages(state: OpeningState) -> OpeningState:
     context = state.get("context_json")
     if not context:
         raise ValueError("context_json이 비어 있습니다. load_context_node를 확인하세요.")
+    
+    date_str = state.get("date")
+    if not date_str:
+        raise ValueError("date 필드가 state에 없습니다.")
+    
+    # 한국어 날짜 형식 (예: "11월 25일")
+    date_korean = _format_date_korean(date_str)
 
     prompt_cfg = load_prompt()
 
     # {{tools}} 플레이스홀더를 실제 도구 설명으로 대체
+    # {{date}} 플레이스홀더를 한국어 날짜로 대체
     system_prompt = prompt_cfg["system"].replace(
         "{{tools}}", _get_tools_description()
+    ).replace(
+        "{{date}}", date_korean
     )
 
     # {{context_json}} 플레이스홀더를 컨텍스트로 대체
+    # {{date}} 플레이스홀더를 한국어 날짜로 대체
     user_prompt = prompt_cfg["user_template"].replace(
         "{{context_json}}", json.dumps(context, ensure_ascii=False, indent=2)
+    ).replace(
+        "{{date}}", date_korean
     )
 
     messages = [
@@ -341,8 +374,13 @@ def extract_script_node(state: OpeningState) -> OpeningState:
     )
     logger.info("최종 결과를 저장했습니다: %s", OUTPUT_PATH)
     
-    # 최종 State: 중간 처리용 필드 제거, 최종 출력용 필드만 반환
-    return {"themes": themes, "nutshell": nutshell, "scripts": scripts}
+    # 최종 State: date 유지, 중간 처리용 필드 제거, 최종 출력용 필드만 반환
+    return {
+        "date": state.get("date"),
+        "themes": themes,
+        "nutshell": nutshell,
+        "scripts": scripts,
+    }
 
 
 def build_graph():
@@ -425,12 +463,45 @@ def cleanup_cache() -> None:
 
 
 def main() -> None:
-    """그래프 실행 진입점."""
+    """그래프 실행 진입점.
+    
+    Usage:
+        python -m src.opening_agent 20251125
+        python -m src.opening_agent 2025-11-25
+    """
+    import argparse
+    from datetime import datetime as dt
+    
+    parser = argparse.ArgumentParser(description="오프닝 에이전트 실행")
+    parser.add_argument(
+        "date",
+        type=str,
+        help="브리핑 날짜 (YYYYMMDD 또는 YYYY-MM-DD 형식, EST 기준)"
+    )
+    args = parser.parse_args()
+    
+    # 날짜 파싱
+    date_str = args.date
+    if "-" in date_str:
+        try:
+            parsed = dt.strptime(date_str, "%Y-%m-%d")
+            date_str = parsed.strftime("%Y%m%d")
+        except ValueError:
+            raise ValueError(f"잘못된 날짜 형식: {date_str}")
+    else:
+        try:
+            dt.strptime(date_str, "%Y%m%d")
+        except ValueError:
+            raise ValueError(f"잘못된 날짜 형식: {date_str}")
+    
     _load_env()
+    
+    # BRIEFING_DATE 환경변수로 설정 (Tool에서 사용)
+    os.environ["BRIEFING_DATE"] = date_str
 
     workflow = build_graph()
-    # 빈 상태로 시작하여 컨텍스트 로드 → 대본 생성 순으로 실행
-    result = workflow.invoke({})
+    # date를 state에 전달하여 실행
+    result = workflow.invoke({"date": date_str})
 
     # 최종 State 출력
     print("\n=== 오프닝 대본 결과 ===\n")

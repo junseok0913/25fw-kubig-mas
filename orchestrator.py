@@ -1,13 +1,19 @@
 """
-상위 LangGraph 오케스트레이터 예제.
+상위 LangGraph 오케스트레이터.
 
 OpeningAgent를 하나의 노드로 취급하고, 출력 State를 BriefingState 스키마에 맞춰
-더미 ThemeAgent 노드로 전달하는 최소 그래프를 구성한다.
+더미 ThemeAgent 노드로 전달하는 그래프를 구성한다.
+
+Usage:
+    python orchestrator.py 20251125
+    python orchestrator.py 2025-11-25
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, TypedDict
 
@@ -24,6 +30,40 @@ from src import opening_agent  # noqa: E402
 from src.utils.tracing import configure_tracing  # noqa: E402
 
 
+def parse_date_arg(date_str: str) -> str:
+    """날짜 문자열을 YYYYMMDD 형식으로 정규화한다.
+    
+    Args:
+        date_str: 입력 날짜 (YYYYMMDD 또는 YYYY-MM-DD 형식)
+    
+    Returns:
+        YYYYMMDD 형식의 날짜 문자열
+    
+    Raises:
+        ValueError: 잘못된 날짜 형식
+    """
+    # YYYY-MM-DD 형식 시도
+    if "-" in date_str:
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            return dt.strftime("%Y%m%d")
+        except ValueError:
+            pass
+    
+    # YYYYMMDD 형식 시도
+    try:
+        dt = datetime.strptime(date_str, "%Y%m%d")
+        return dt.strftime("%Y%m%d")
+    except ValueError:
+        raise ValueError(f"잘못된 날짜 형식입니다: {date_str}. YYYYMMDD 또는 YYYY-MM-DD 형식을 사용하세요.")
+
+
+def format_date_korean(date_yyyymmdd: str) -> str:
+    """YYYYMMDD를 '11월 25일' 형식의 한국어로 변환한다."""
+    dt = datetime.strptime(date_yyyymmdd, "%Y%m%d")
+    return f"{dt.month}월 {dt.day}일"
+
+
 class Theme(TypedDict):
     headline: str
     description: str
@@ -37,6 +77,9 @@ class ScriptTurn(TypedDict):
 
 
 class BriefingState(TypedDict, total=False):
+    # 날짜 (EST 기준, YYYYMMDD 형식)
+    date: str
+    
     # User input
     user_tickers: List[str]
 
@@ -53,8 +96,20 @@ class BriefingState(TypedDict, total=False):
 
 def opening_node(state: BriefingState) -> BriefingState:
     """OpeningAgent를 실행해 BriefingState 필드를 채운다."""
+    import os
+    
+    # state에서 날짜를 가져와 OpeningAgent에 전달
+    date_str = state.get("date")
+    if not date_str:
+        raise ValueError("date 필드가 state에 없습니다. orchestrator 실행 시 날짜를 지정하세요.")
+    
+    # BRIEFING_DATE 환경변수로 설정 (Tool에서 사용)
+    os.environ["BRIEFING_DATE"] = date_str
+    
     oa_graph = opening_agent.build_graph()
-    oa_result = oa_graph.invoke({})
+    # OpeningAgent에 date를 전달
+    oa_result = oa_graph.invoke({"date": date_str})
+    
     # orchestrator 경유 실행 시 OpeningAgent.main()의 cleanup_cache가 호출되지 않으므로 여기서 정리
     try:
         opening_agent.cleanup_cache()
@@ -112,10 +167,42 @@ def build_orchestrator():
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="장마감 브리핑 오케스트레이터",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+예시:
+    python orchestrator.py 20251125
+    python orchestrator.py 2025-11-25
+        
+날짜는 EST(미국 동부 시간) 기준입니다.
+        """
+    )
+    parser.add_argument(
+        "date",
+        type=str,
+        help="브리핑 날짜 (YYYYMMDD 또는 YYYY-MM-DD 형식, EST 기준)"
+    )
+    args = parser.parse_args()
+    
+    # 날짜 파싱 및 검증
+    try:
+        date_yyyymmdd = parse_date_arg(args.date)
+    except ValueError as e:
+        print(f"오류: {e}", file=sys.stderr)
+        sys.exit(1)
+    
+    date_korean = format_date_korean(date_yyyymmdd)
+    print(f"=== {date_korean} 장마감 브리핑 시작 ===")
+    print(f"날짜: {date_yyyymmdd} (EST)")
+    
     app = build_orchestrator()
-    # user_tickers는 예시 입력; 필요 시 CLI 인자로 치환 가능
-    result = app.invoke({"user_tickers": []})
-    print("=== Orchestrator Result ===")
+    result = app.invoke({
+        "date": date_yyyymmdd,
+        "user_tickers": [],
+    })
+    
+    print("\n=== Orchestrator Result ===")
     print("nutshell:", result.get("nutshell"))
     print("themes:", result.get("themes"))
     print("scripts len:", len(result.get("scripts", [])))
