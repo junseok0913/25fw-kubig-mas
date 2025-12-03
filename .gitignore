@@ -1,2 +1,4 @@
 __pycache__/
+ChartAgent/
 .env
+.pytest_cache/
