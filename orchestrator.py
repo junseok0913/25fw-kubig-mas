@@ -28,6 +28,7 @@ if str(OPENING_AGENT_ROOT) not in sys.path:
 
 from src import opening_agent  # noqa: E402
 from src.utils.tracing import configure_tracing  # noqa: E402
+from ThemeAgent.src import theme_agent  # noqa: E402
 
 
 def parse_date_arg(date_str: str) -> str:
@@ -130,23 +131,34 @@ def opening_node(state: BriefingState) -> BriefingState:
 
 
 def theme_node(state: BriefingState) -> BriefingState:
-    """더미 ThemeAgent: 테마마다 간단한 멘트를 scripts에 append."""
-    themes = state.get("themes", [])
-    scripts = list(state.get("scripts", []))
+    """ThemeAgent를 실행해 테마별 심층 스크립트를 생성한다."""
+    import os
 
-    for idx, theme in enumerate(themes, 1):
-        headline = theme.get("headline", f"테마 {idx}")
-        scripts.append(
-            {
-                "speaker": "해설자",
-                "text": f"[테마#{idx}] {headline} 요약 스텁입니다. (ThemeAgent placeholder)",
-                "sources": theme.get("related_news", []),
-            }
-        )
+    date_str = state.get("date")
+    if not date_str:
+        raise ValueError("date 필드가 state에 없습니다. orchestrator 실행 시 날짜를 지정하세요.")
+
+    # BRIEFING_DATE 환경변수 설정 (Tool에서 사용)
+    os.environ["BRIEFING_DATE"] = date_str
+
+    ta_graph = theme_agent.build_theme_graph()
+    result = ta_graph.invoke(
+        {
+            "date": date_str,
+            "nutshell": state.get("nutshell", ""),
+            "themes": state.get("themes", []),
+            "base_scripts": state.get("scripts", []),
+        }
+    )
+
+    try:
+        theme_agent.cleanup_cache()
+    except Exception:
+        pass
 
     return {
         **state,
-        "scripts": scripts,
+        "scripts": result.get("scripts", []),
         "current_section": "stock",
     }
 
