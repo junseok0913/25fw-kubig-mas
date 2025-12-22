@@ -274,20 +274,20 @@ def _prepare_initial_messages(state: OpeningState) -> OpeningState:
 
     prompt_cfg = load_prompt()
 
-    # {{tools}} 플레이스홀더를 실제 도구 설명으로 대체
-    # {{date}} 플레이스홀더를 한국어 날짜로 대체
+    # {tools} 플레이스홀더를 실제 도구 설명으로 대체
+    # {date} 플레이스홀더를 한국어 날짜로 대체
     system_prompt = prompt_cfg["system"].replace(
-        "{{tools}}", _get_tools_description()
+        "{tools}", _get_tools_description()
     ).replace(
-        "{{date}}", date_korean
+        "{date}", date_korean
     )
 
-    # {{context_json}} 플레이스홀더를 컨텍스트로 대체
-    # {{date}} 플레이스홀더를 한국어 날짜로 대체
+    # {context_json} 플레이스홀더를 컨텍스트로 대체
+    # {date} 플레이스홀더를 한국어 날짜로 대체
     user_prompt = prompt_cfg["user_template"].replace(
-        "{{context_json}}", json.dumps(context, ensure_ascii=False, indent=2)
+        "{context_json}", json.dumps(context, ensure_ascii=False, indent=2)
     ).replace(
-        "{{date}}", date_korean
+        "{date}", date_korean
     )
 
     messages = [

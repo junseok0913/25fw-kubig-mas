@@ -1,12 +1,13 @@
 """
 상위 LangGraph 오케스트레이터.
 
-OpeningAgent를 하나의 노드로 취급하고, 출력 State를 BriefingState 스키마에 맞춰
-더미 ThemeAgent 노드로 전달하는 그래프를 구성한다.
+OpeningAgent → ThemeAgent 순서로 에이전트를 실행하는 그래프를 구성한다.
+--stage 옵션으로 어느 에이전트까지 실행할지 제어할 수 있다.
 
 Usage:
-    python orchestrator.py 20251125
-    python orchestrator.py 2025-11-25
+    python orchestrator.py 20251125                # ThemeAgent까지 실행 (기본값)
+    python orchestrator.py 2025-11-25 --stage 0    # OpeningAgent만 실행
+    python orchestrator.py 20251125 --stage 1      # ThemeAgent까지 실행
 """
 
 from __future__ import annotations
@@ -163,17 +164,27 @@ def theme_node(state: BriefingState) -> BriefingState:
     }
 
 
-def build_orchestrator():
-    """Opening→Theme(dummy) 두 노드로 구성된 상위 그래프를 컴파일한다."""
+def build_orchestrator(stage: int = 1):
+    """상위 그래프를 컴파일한다.
+    
+    Args:
+        stage: 실행할 에이전트 단계
+            0 - OpeningAgent만 실행
+            1 - ThemeAgent까지 실행 (기본값)
+    """
     load_dotenv(ROOT / ".env", override=False)
     configure_tracing()
     graph = StateGraph(BriefingState)
     graph.add_node("opening", opening_node)
-    graph.add_node("theme", theme_node)
-
-    graph.add_edge("opening", "theme")
-    graph.add_edge("theme", END)
     graph.set_entry_point("opening")
+    
+    if stage >= 1:
+        graph.add_node("theme", theme_node)
+        graph.add_edge("opening", "theme")
+        graph.add_edge("theme", END)
+    else:
+        # stage == 0: OpeningAgent만 실행
+        graph.add_edge("opening", END)
 
     return graph.compile()
 
@@ -186,6 +197,8 @@ def main() -> None:
 예시:
     python orchestrator.py 20251125
     python orchestrator.py 2025-11-25
+    python orchestrator.py 20251125 --stage 0  # OpeningAgent만 실행
+    python orchestrator.py 20251125 --stage 1  # ThemeAgent까지 실행
         
 날짜는 EST(미국 동부 시간) 기준입니다.
         """
@@ -194,6 +207,13 @@ def main() -> None:
         "date",
         type=str,
         help="브리핑 날짜 (YYYYMMDD 또는 YYYY-MM-DD 형식, EST 기준)"
+    )
+    parser.add_argument(
+        "--stage",
+        type=int,
+        default=1,
+        choices=[0, 1],
+        help="실행할 에이전트 단계 (0: OpeningAgent만, 1: ThemeAgent까지, 기본값: 1)"
     )
     args = parser.parse_args()
     
@@ -204,11 +224,13 @@ def main() -> None:
         print(f"오류: {e}", file=sys.stderr)
         sys.exit(1)
     
+    stage_names = {0: "OpeningAgent", 1: "ThemeAgent"}
     date_korean = format_date_korean(date_yyyymmdd)
     print(f"=== {date_korean} 장마감 브리핑 시작 ===")
     print(f"날짜: {date_yyyymmdd} (EST)")
+    print(f"실행 단계: {args.stage} ({stage_names.get(args.stage, 'Unknown')}까지)")
     
-    app = build_orchestrator()
+    app = build_orchestrator(stage=args.stage)
     result = app.invoke({
         "date": date_yyyymmdd,
         "user_tickers": [],
