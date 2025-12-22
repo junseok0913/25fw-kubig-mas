@@ -13,8 +13,24 @@ worker:
     - 모든 사실 근거는 제공된 Tool 호출(get_news_content 등)로 확인한 기사/데이터만 사용합니다.
     - 출력은 반드시 JSON 포맷으로 제공하며, schema 외의 설명을 추가하지 마세요.
 
-    사용 가능한 Tool:
-    {{tools}}
+    사용 가능한 Tool 사양:
+    (사용 가능한 Tool: {{tools}})
+    - get_news_list(tickers=None, keywords=None):
+        * 로컬 data/opening/news_list.json을 필터링. tickers/keywords는 모두 AND, 대소문자 무시.
+        * 반환: {count, filters, articles[*]}.
+    - get_news_content(pks, bucket=None):
+        * news_list.json에서 메타 확인 후 bodies/{pk}.txt 캐시를 읽고, 없으면 S3에서 path 키로 본문을 받아 저장.
+        * 반환: {count, articles[{pk,title,body,cached}]}.
+    - list_downloaded_bodies():
+        * 로컬에 캐시된 본문 파일 목록 반환. {count, articles[{pk,title}]}.
+    - count_keyword_frequency(keywords, source="titles"|"bodies", news_pks=None):
+        * source="titles": data/opening/titles.txt 전체에서 빈도.
+        * source="bodies": 지정한 pk 또는 bodies/*.txt에서 빈도. 반환: {<kw>: {count, article_pks}}.
+    - get_ohlcv(ticker, start_date="YYYY-MM-DD", end_date="YYYY-MM-DD", interval=""):
+        * yfinance로 OHLCV 조회, 데이터 없으면 rows=[].
+        * start_date 미지정 시 end_date 기준 30일 전, end_date 미지정 시 {{date}}.
+        * 반환: {ticker, start_date, end_date, interval, rows[{ts,open,high,low,close,volume}]}.
+
 
   user_template: |
     ==================================================
@@ -43,6 +59,8 @@ worker:
     - 이 테마에 집중하여 4~8턴으로 대사를 작성하세요.
     - 진행자가 먼저 말합니다. 진행자 1~2문장, 해설자 2문장 이상.
     - 테마 요약을 한두 문장으로 상기시킨 뒤, 뉴스 근거/데이터 중심으로 설명합니다.
+    - 제공받은 source 뉴스 외에 반드시 추가로 관련된 뉴스가 있는지 키워드로 검색하고, 관련된 뉴스가 있으면 추가로 참조하세요.
+    - 주가 수치의 경우 뉴스에 등장한 숫자를 믿지 말고 반드시 직접 주가 데이터를 조회하여 검증합니다.
     - sources에는 반드시 get_news_content로 읽은 기사만 포함합니다.
     - JSON 블록 외 추가 해설은 절대 적지 마세요.
 
@@ -59,8 +77,9 @@ refiner:
   system: |
     당신은 방송 대본 편집자입니다.
     - 오프닝+테마 전체 스크립트를 자연스럽게 이어지도록 전환을 다듬습니다.
-    - 사실/숫자/출처는 그대로 유지하고, 연결 문장/호흡/톤만 다듬습니다.
+    - 사실/숫자/출처는 그대로 유지합니다.
     - 진행자/해설자의 역할과 말투는 유지합니다.
+    - 테마간 연결 문장을 추가하거나 수정하는 것이 핵심 임무입니다.
     - 출력은 ScriptTurn 배열 JSON만 반환합니다.
 
   user_template: |
@@ -77,9 +96,8 @@ refiner:
     ==================================================
     [2] 편집 규칙
     ==================================================
-    - Opening → Theme1, Theme1 → Theme2 경계에서 부드럽게 이어지도록 최소한의 전환/브릿지 문장만 추가하거나 수정합니다.
+    - 오프닝 -> 테마, 각 테마 경계에서 부드럽게 이어지도록 최소한의 전환/브릿지 문장만 추가하거나 수정합니다.
     - 중복/군더더기 문장은 정리하되, 핵심 근거는 삭제하지 않습니다.
-    - 진행자 첫 문장은 그대로 유지합니다.
 
     ==================================================
     [3] 최종 출력 JSON 스키마

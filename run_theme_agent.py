@@ -76,6 +76,7 @@ def main() -> None:
     os.environ["BRIEFING_DATE"] = str(date_str)
 
     ta_graph = theme_agent.build_theme_graph()
+    print("[ThemeAgent] 실행 시작")
     result = ta_graph.invoke(
         {
             "date": str(date_str),
@@ -84,6 +85,7 @@ def main() -> None:
             "base_scripts": data.get("scripts", []),
         }
     )
+    print("[ThemeAgent] 실행 완료")
 
     output_payload = {
         "date": date_str,

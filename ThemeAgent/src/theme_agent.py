@@ -84,6 +84,8 @@ def _build_llm() -> ChatOpenAI:
     model_name = os.getenv("OPENAI_MODEL", "gpt-5.1")
     reasoning_effort = os.getenv("OPENAI_REASONING_EFFORT", "medium")
     temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.0"))
+    timeout = float(os.getenv("OPENAI_TIMEOUT", "120"))
+    max_retries = int(os.getenv("OPENAI_MAX_RETRIES", "2"))
 
     configure_tracing(logger=logger)
 
@@ -91,6 +93,8 @@ def _build_llm() -> ChatOpenAI:
         model=model_name,
         temperature=temperature,
         reasoning_effort=reasoning_effort,
+        timeout=timeout,
+        max_retries=max_retries,
     )
 
 
@@ -305,10 +309,6 @@ def build_theme_graph():
     worker_graph = build_worker_graph()
     graph = StateGraph(ThemeState)
 
-    async def _run_workers(inputs: List[Dict[str, Any]]) -> List[Any]:
-        tasks = [worker_graph.ainvoke(inp) for inp in inputs]
-        return await asyncio.gather(*tasks, return_exceptions=True)
-
     def run_theme_workers(state: ThemeState) -> ThemeState:
         themes = state.get("themes", []) or []
         if not themes:
@@ -325,17 +325,10 @@ def build_theme_graph():
             for theme in themes
         ]
 
-        try:
-            results = asyncio.run(_run_workers(inputs))
-        except RuntimeError:
-            # 이미 이벤트 루프가 돌고 있는 환경 대비
-            loop = asyncio.new_event_loop()
-            try:
-                asyncio.set_event_loop(loop)
-                results = loop.run_until_complete(_run_workers(inputs))
-            finally:
-                asyncio.set_event_loop(None)
-                loop.close()
+        logger.info("ThemeWorker 병렬 실행 시작: %d개", len(inputs))
+        # langgraph compiled graph의 batch는 내부적으로 비동기 실행을 처리한다.
+        results = worker_graph.batch(inputs, return_exceptions=True)  # type: ignore[attr-defined]
+        logger.info("ThemeWorker 병렬 실행 완료")
 
         theme_scripts: List[List[ScriptTurn]] = []
         for idx, res in enumerate(results):
@@ -343,7 +336,9 @@ def build_theme_graph():
                 logger.warning("ThemeWorker %d 실패: %s", idx, res)
                 theme_scripts.append([])
             else:
-                theme_scripts.append(res.get("scripts", []))
+                turns = res.get("scripts", [])
+                theme_scripts.append(turns)
+                logger.info("ThemeWorker %d 완료: %d턴", idx, len(turns))
         return {**state, "theme_scripts": theme_scripts}
 
     def merge_scripts(state: ThemeState) -> ThemeState:
@@ -379,7 +374,8 @@ def build_theme_graph():
         ]
 
         logger.info("Refiner 호출")
-        response = llm.invoke(messages)
+        response = llm.invoke(messages, config={"timeout": float(os.getenv("OPENAI_TIMEOUT", "120"))})
+        logger.info("Refiner 응답 수신")
         parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
         refined_scripts: List[ScriptTurn] | Any
         if isinstance(parsed, list):
@@ -391,6 +387,8 @@ def build_theme_graph():
         if not refined_scripts:
             logger.warning("Refiner가 유효한 scripts를 반환하지 않아 merge 결과를 그대로 사용합니다.")
             refined_scripts = state.get("scripts", [])
+        else:
+            logger.info("Refiner 결과 수신: %d턴", len(refined_scripts))
 
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_PATH.write_text(json.dumps(refined_scripts, ensure_ascii=False, indent=2), encoding="utf-8")
