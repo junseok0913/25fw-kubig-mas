@@ -278,7 +278,7 @@ class ThemeWorkerState(TypedDict, total=False):
 #### `prepare_messages`
 
 - 역할:
-  - `ThemeAgent/prompt/theme_script.yaml`의 `system` / `user_template`를 로드.
+  - `ThemeAgent/prompt/theme_worker.yaml` / `ThemeAgent/prompt/theme_refine.yaml`를 로드.
   - 플레이스홀더 치환:
     - `{{date}}` → 한국어 날짜 (예: `"11월 25일"`)
     - `{{nutshell}}` → 오늘 시장 한마디
@@ -401,4 +401,3 @@ OpeningAgent와 동일한 환경변수 세트를 사용한다.
   - Refiner LLM으로 Opening+Theme 전체 스크립트의 전환과 톤을 다듬는다.
 - 각 실행은 ThemeAgent 전용 캐시 디렉터리를 사용하며,  
   종료 시 `cleanup_cache()`를 통해 캐시를 정리하는 구조로 OpeningAgent와 패턴을 맞춘다.
-

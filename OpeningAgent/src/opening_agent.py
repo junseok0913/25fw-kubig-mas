@@ -274,25 +274,44 @@ def _build_llm() -> ChatOpenAI:
     """
     OpenAI LLM 인스턴스 생성 (context-7/5.1 스타일 설정).
 
-    - 기본 모델: gpt-5.1 (OPENAI_MODEL로 재정의 가능)
-    - reasoning_effort: medium (OPENAI_REASONING_EFFORT로 재정의)
+    Env override 우선순위:
+    - OPENING_OPENAI_* (예: OPENING_OPENAI_MODEL)
+    - OPENAI_*
     - LangGraph에서 요구하는 ChatModel 인터페이스를 준수
     """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise EnvironmentError("OPENAI_API_KEY가 설정되지 않았습니다. .env 또는 환경변수를 확인하세요.")
 
-    model_name = os.getenv("OPENAI_MODEL", "gpt-5.1")
-    reasoning_effort = os.getenv("OPENAI_REASONING_EFFORT", "medium")
-    temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.0"))
+    def _getenv_nonempty(name: str, default: str) -> str:
+        v = os.getenv(name)
+        if v is None:
+            return default
+        v = v.strip()
+        return v if v else default
+
+    def cfg(key: str, default_env_key: str, default: str) -> str:
+        return _getenv_nonempty(f"OPENING_{key}", _getenv_nonempty(default_env_key, default))
+
+    model_name = cfg("OPENAI_MODEL", "OPENAI_MODEL", "gpt-5.1")
+    reasoning_effort_raw = cfg("OPENAI_REASONING_EFFORT", "OPENAI_REASONING_EFFORT", "")
+    temperature = float(cfg("OPENAI_TEMPERATURE", "OPENAI_TEMPERATURE", "0.0"))
+    timeout = float(cfg("OPENAI_TIMEOUT", "OPENAI_TIMEOUT", "120"))
+    max_retries = int(cfg("OPENAI_MAX_RETRIES", "OPENAI_MAX_RETRIES", "2"))
 
     configure_tracing(logger=logger)
 
-    return ChatOpenAI(
-        model=model_name,
-        temperature=temperature,
-        reasoning_effort=reasoning_effort,
-    )
+    reasoning_effort_norm = (reasoning_effort_raw or "").strip().lower()
+    llm_kwargs: dict[str, object] = {
+        "model": model_name,
+        "temperature": temperature,
+        "timeout": timeout,
+        "max_retries": max_retries,
+    }
+    if reasoning_effort_norm and reasoning_effort_norm not in {"none", "null", "off", "false"}:
+        llm_kwargs["reasoning_effort"] = reasoning_effort_raw
+
+    return ChatOpenAI(**llm_kwargs)
 
 
 def _prepare_initial_messages(state: OpeningState) -> OpeningState:

@@ -27,6 +27,7 @@ from langgraph.prebuilt import ToolNode
 from . import prefetch
 from .tools import (
     count_keyword_frequency,
+    get_calendar,
     get_news_content,
     get_news_list,
     get_ohlcv,
@@ -40,8 +41,11 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # ThemeAgent/
 ROOT_DIR = BASE_DIR.parent
-PROMPT_PATH = BASE_DIR / "prompt/theme_script.yaml"
+WORKER_PROMPT_PATH = BASE_DIR / "prompt/theme_worker.yaml"
+REFINER_PROMPT_PATH = BASE_DIR / "prompt/theme_refine.yaml"
 OUTPUT_PATH = BASE_DIR / "data/theme_result.json"
+CALENDAR_CSV_PATH = BASE_DIR / "data/theme/calendar.csv"
+CALENDAR_JSON_PATH = BASE_DIR / "data/theme/calendar.json"
 
 # LangChain Tool 리스트 (LLM에 바인딩할 도구들)
 TOOLS = [
@@ -50,6 +54,7 @@ TOOLS = [
     list_downloaded_bodies,
     count_keyword_frequency,
     get_ohlcv,
+    get_calendar,
 ]
 
 
@@ -75,27 +80,53 @@ def _format_date_korean(date_yyyymmdd: str) -> str:
     return f"{dt.month}월 {dt.day}일"
 
 
-def _build_llm() -> ChatOpenAI:
-    """OpenAI LLM 인스턴스를 생성한다."""
+def _build_llm(profile: str | None = None) -> ChatOpenAI:
+    """OpenAI LLM 인스턴스를 생성한다.
+
+    Env override 우선순위:
+    - profile 지정 시: THEME_{PROFILE}_OPENAI_* (예: THEME_REFINER_OPENAI_MODEL)
+    - 공통: OPENAI_*
+    """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise EnvironmentError("OPENAI_API_KEY가 설정되지 않았습니다. .env 또는 환경변수를 확인하세요.")
 
-    model_name = os.getenv("OPENAI_MODEL", "gpt-5.1")
-    reasoning_effort = os.getenv("OPENAI_REASONING_EFFORT", "medium")
-    temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.0"))
-    timeout = float(os.getenv("OPENAI_TIMEOUT", "120"))
-    max_retries = int(os.getenv("OPENAI_MAX_RETRIES", "2"))
+    prefix = f"THEME_{profile.upper()}" if profile else "THEME"
+
+    def _getenv_nonempty(name: str, default: str) -> str:
+        v = os.getenv(name)
+        if v is None:
+            return default
+        v = v.strip()
+        return v if v else default
+
+    def cfg(key: str, default_env_key: str, default: str) -> str:
+        return _getenv_nonempty(f"{prefix}_{key}", _getenv_nonempty(default_env_key, default))
+
+    model_name = cfg("OPENAI_MODEL", "OPENAI_MODEL", "gpt-5.1")
+    reasoning_effort_raw = cfg("OPENAI_REASONING_EFFORT", "OPENAI_REASONING_EFFORT", "")
+    temperature = float(cfg("OPENAI_TEMPERATURE", "OPENAI_TEMPERATURE", "0.0"))
+    timeout = float(cfg("OPENAI_TIMEOUT", "OPENAI_TIMEOUT", "120"))
+    max_retries = int(cfg("OPENAI_MAX_RETRIES", "OPENAI_MAX_RETRIES", "2"))
 
     configure_tracing(logger=logger)
 
-    return ChatOpenAI(
-        model=model_name,
-        temperature=temperature,
-        reasoning_effort=reasoning_effort,
-        timeout=timeout,
-        max_retries=max_retries,
-    )
+    reasoning_effort_norm = (reasoning_effort_raw or "").strip().lower()
+    llm_kwargs: dict[str, object] = {
+        "model": model_name,
+        "temperature": temperature,
+        "timeout": timeout,
+        "max_retries": max_retries,
+    }
+    if reasoning_effort_norm and reasoning_effort_norm not in {"none", "null", "off", "false"}:
+        llm_kwargs["reasoning_effort"] = reasoning_effort_raw
+
+    return ChatOpenAI(**llm_kwargs)
+
+
+def _looks_like_model_not_found(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return ("model_not_found" in msg) or ("does not exist" in msg) or ("do not have access" in msg)
 
 
 def _parse_json_from_response(content: str) -> Dict[str, Any]:
@@ -114,19 +145,49 @@ def _parse_json_from_response(content: str) -> Dict[str, Any]:
 
 
 def _load_prompt() -> Dict[str, str]:
-    """theme_script.yaml에서 worker/refiner 프롬프트를 읽어온다."""
-    if not PROMPT_PATH.exists():
-        raise FileNotFoundError(f"프롬프트 파일이 없습니다: {PROMPT_PATH}")
-    with open(PROMPT_PATH, "r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
-    worker = raw.get("worker", {})
-    refiner = raw.get("refiner", {})
+    """worker/refiner 프롬프트 파일을 로드한다."""
+    if not WORKER_PROMPT_PATH.exists():
+        raise FileNotFoundError(f"worker 프롬프트 파일이 없습니다: {WORKER_PROMPT_PATH}")
+    if not REFINER_PROMPT_PATH.exists():
+        raise FileNotFoundError(f"refiner 프롬프트 파일이 없습니다: {REFINER_PROMPT_PATH}")
+
+    with open(WORKER_PROMPT_PATH, "r", encoding="utf-8") as f:
+        worker_raw = yaml.safe_load(f) or {}
+    with open(REFINER_PROMPT_PATH, "r", encoding="utf-8") as f:
+        refiner_raw = yaml.safe_load(f) or {}
+
     return {
-        "worker_system": worker.get("system", ""),
-        "worker_user_template": worker.get("user_template", ""),
-        "refiner_system": refiner.get("system", ""),
-        "refiner_user_template": refiner.get("user_template", ""),
+        "worker_system": worker_raw.get("system", ""),
+        "worker_user_template": worker_raw.get("user_template", ""),
+        "refiner_system": refiner_raw.get("system", ""),
+        "refiner_user_template": refiner_raw.get("user_template", ""),
     }
+
+
+def _load_calendar_context() -> str:
+    """calendar.csv를 읽어 worker 프롬프트에 넣을 최소 컨텍스트 문자열을 만든다.
+
+    각 줄: id, est_date(YYYYMMDD), title (TSV)
+    """
+    if not CALENDAR_CSV_PATH.exists():
+        return ""
+
+    import csv as _csv
+
+    lines: list[str] = ["id\test_date\ttitle"]
+    with CALENDAR_CSV_PATH.open("r", encoding="utf-8", newline="") as f:
+        reader = _csv.DictReader(f)
+        for row in reader:
+            lines.append(
+                "\t".join(
+                    [
+                        str(row.get("id") or "").strip(),
+                        str(row.get("est_date") or "").strip(),
+                        str(row.get("title") or "").strip(),
+                    ]
+                ).rstrip()
+            )
+    return "\n".join(lines).strip()
 
 
 # ==== State 타입 ====
@@ -167,29 +228,6 @@ class ThemeWorkerState(TypedDict, total=False):
 
 
 # ==== ThemeWorkerGraph 노드 ====
-def prefetch_news_node(state: ThemeWorkerState) -> ThemeWorkerState:
-    """DynamoDB에서 뉴스 메타데이터를 사전 수집한다."""
-    date_str = state.get("date")
-    if not date_str:
-        raise ValueError("date 필드가 state에 없습니다.")
-
-    try:
-        date_obj = datetime.strptime(date_str, "%Y%m%d").date()
-    except ValueError:
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
-
-    os.environ.setdefault("BRIEFING_DATE", date_obj.strftime("%Y%m%d"))
-
-    try:
-        payload = prefetch.prefetch_news(today=date_obj)
-        logger.info("ThemeWorker 프리페치 완료: %d건 (날짜: %s)", payload.get("count", 0), date_str)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
-        payload = {}
-
-    return {**state, "news_meta": payload}  # type: ignore[typeddict-unknown-key]
-
-
 def load_context_node(state: ThemeWorkerState) -> ThemeWorkerState:
     """단일 테마 기반 컨텍스트를 구성한다."""
     theme = state.get("theme", {})
@@ -214,17 +252,18 @@ def prepare_messages_node(state: ThemeWorkerState) -> ThemeWorkerState:
 
     date_korean = _format_date_korean(date_str.replace("-", ""))
 
-    system_prompt = prompt_cfg["worker_system"].replace("{{tools}}", _get_tools_description()).replace(
-        "{{date}}", date_korean
-    )
+    system_prompt = prompt_cfg["worker_system"].replace("{tools}", _get_tools_description()).replace("{date}", date_korean)
+
+    calendar_context = _load_calendar_context()
 
     human_prompt = (
         prompt_cfg["worker_user_template"]
-        .replace("{{date}}", date_korean)
-        .replace("{{nutshell}}", state.get("nutshell") or "")
-        .replace("{{theme}}", json.dumps(theme, ensure_ascii=False, indent=2))
-        .replace("{{theme_context}}", json.dumps(state.get("theme_context", {}), ensure_ascii=False, indent=2))
-        .replace("{{base_scripts}}", json.dumps(base_scripts, ensure_ascii=False, indent=2))
+        .replace("{date}", date_korean)
+        .replace("{nutshell}", state.get("nutshell") or "")
+        .replace("{theme}", json.dumps(theme, ensure_ascii=False, indent=2))
+        .replace("{theme_context}", json.dumps(state.get("theme_context", {}), ensure_ascii=False, indent=2))
+        .replace("{base_scripts}", json.dumps(base_scripts, ensure_ascii=False, indent=2))
+        .replace("{calendar_context}", calendar_context)
     )
 
     messages = [
@@ -236,7 +275,7 @@ def prepare_messages_node(state: ThemeWorkerState) -> ThemeWorkerState:
 
 def worker_agent_node(state: ThemeWorkerState) -> ThemeWorkerState:
     """Tool이 바인딩된 LLM을 호출한다."""
-    llm = _build_llm()
+    llm = _build_llm(profile="worker")
     llm_with_tools = llm.bind_tools(TOOLS)
     messages = state.get("messages", [])
     logger.info("ThemeWorker Agent 호출: %d개 메시지", len(messages))
@@ -275,15 +314,13 @@ def build_worker_graph():
     _load_env()
     graph = StateGraph(ThemeWorkerState)
 
-    graph.add_node("prefetch_news", prefetch_news_node)
     graph.add_node("load_context", load_context_node)
     graph.add_node("prepare_messages", prepare_messages_node)
     graph.add_node("agent", worker_agent_node)
     graph.add_node("tools", ToolNode(TOOLS))
     graph.add_node("extract_scripts", extract_theme_scripts_node)
 
-    graph.add_edge(START, "prefetch_news")
-    graph.add_edge("prefetch_news", "load_context")
+    graph.add_edge(START, "load_context")
     graph.add_edge("load_context", "prepare_messages")
     graph.add_edge("prepare_messages", "agent")
 
@@ -297,7 +334,7 @@ def build_worker_graph():
     )
     graph.add_edge("tools", "agent")
     graph.add_edge("extract_scripts", END)
-    graph.set_entry_point("prefetch_news")
+    graph.set_entry_point("load_context")
 
     return graph.compile()
 
@@ -308,6 +345,33 @@ def build_theme_graph():
     _load_env()
     worker_graph = build_worker_graph()
     graph = StateGraph(ThemeState)
+
+    def prefetch_cache(state: ThemeState) -> ThemeState:
+        """ThemeAgent 실행 전 캐시를 한 번만 프리페치한다 (뉴스 + 캘린더)."""
+        date_str = state.get("date") or ""
+        if not date_str:
+            raise ValueError("date 필드가 state에 없습니다.")
+
+        try:
+            date_obj = datetime.strptime(date_str.replace("-", ""), "%Y%m%d").date()
+        except ValueError as exc:
+            raise ValueError(f"잘못된 날짜 형식: {date_str}") from exc
+
+        os.environ.setdefault("BRIEFING_DATE", date_obj.strftime("%Y%m%d"))
+
+        try:
+            payload = prefetch.prefetch_news(today=date_obj)
+            logger.info("ThemeAgent 뉴스 프리페치 완료: %d건 (날짜: %s)", payload.get("count", 0), date_str)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("ThemeAgent 뉴스 프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
+
+        try:
+            cal_payload = prefetch.prefetch_calendar(today=date_obj)
+            logger.info("ThemeAgent 캘린더 프리페치 완료: %d건 (날짜: %s)", cal_payload.get("count", 0), date_str)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("ThemeAgent 캘린더 프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
+
+        return state
 
     def run_theme_workers(state: ThemeState) -> ThemeState:
         themes = state.get("themes", []) or []
@@ -353,19 +417,20 @@ def build_theme_graph():
 
     def refine_transitions(state: ThemeState) -> ThemeState:
         prompt_cfg = _load_prompt()
-        llm = _build_llm()
+        llm = _build_llm(profile="refiner")
 
-        scripts_json = json.dumps(state.get("scripts", []), ensure_ascii=False, indent=2)
-        themes_json = json.dumps(state.get("themes", []), ensure_ascii=False, indent=2)
+        # Refiner 입력은 커질 수 있으므로(Opening+Theme 전체) 최대한 압축해 전송한다.
+        scripts_json = json.dumps(state.get("scripts", []), ensure_ascii=False, separators=(",", ":"))
+        themes_json = json.dumps(state.get("themes", []), ensure_ascii=False, separators=(",", ":"))
         date_str = state.get("date") or ""
         date_korean = _format_date_korean(date_str.replace("-", "")) if date_str else ""
 
-        system_prompt = prompt_cfg["refiner_system"].replace("{{date}}", date_korean)
+        system_prompt = prompt_cfg["refiner_system"].replace("{date}", date_korean)
         human_prompt = (
             prompt_cfg["refiner_user_template"]
-            .replace("{{scripts}}", scripts_json)
-            .replace("{{themes}}", themes_json)
-            .replace("{{date}}", date_korean)
+            .replace("{scripts}", scripts_json)
+            .replace("{themes}", themes_json)
+            .replace("{date}", date_korean)
         )
 
         messages = [
@@ -374,9 +439,37 @@ def build_theme_graph():
         ]
 
         logger.info("Refiner 호출")
-        response = llm.invoke(messages, config={"timeout": float(os.getenv("OPENAI_TIMEOUT", "120"))})
-        logger.info("Refiner 응답 수신")
-        parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
+        timeout = float(
+            os.getenv(
+                "THEME_REFINER_OPENAI_TIMEOUT",
+                os.getenv("OPENAI_REFINER_TIMEOUT", os.getenv("OPENAI_TIMEOUT", "120")),
+            )
+        )
+
+        parsed: Any
+        try:
+            response = llm.invoke(messages, config={"timeout": timeout})
+            logger.info("Refiner 응답 수신")
+            parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
+        except Exception as exc:  # noqa: BLE001
+            # 모델 이름 오타/권한 문제는 설정 문제이므로, 자동으로 공통(또는 worker) 모델로 1회 폴백해 시도한다.
+            if _looks_like_model_not_found(exc):
+                fallback_llm = _build_llm(profile="worker")
+                logger.warning(
+                    "Refiner 모델 접근 불가로 폴백합니다: %s -> %s",
+                    os.getenv("THEME_REFINER_OPENAI_MODEL") or os.getenv("OPENAI_MODEL"),
+                    os.getenv("THEME_WORKER_OPENAI_MODEL") or os.getenv("OPENAI_MODEL"),
+                )
+                try:
+                    response = fallback_llm.invoke(messages, config={"timeout": timeout})
+                    logger.info("Refiner(폴백) 응답 수신")
+                    parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
+                except Exception as exc2:  # noqa: BLE001
+                    logger.warning("Refiner(폴백) 호출 실패: %s", exc2)
+                    parsed = {}
+            else:
+                logger.warning("Refiner 호출 실패(타임아웃/네트워크 등): %s", exc)
+                parsed = {}
         refined_scripts: List[ScriptTurn] | Any
         if isinstance(parsed, list):
             refined_scripts = parsed  # 이미 배열 형태로 응답
@@ -395,15 +488,17 @@ def build_theme_graph():
 
         return {**state, "scripts": refined_scripts}
 
+    graph.add_node("prefetch_cache", prefetch_cache)
     graph.add_node("run_theme_workers", run_theme_workers)
     graph.add_node("merge_scripts", merge_scripts)
     graph.add_node("refine_transitions", refine_transitions)
 
-    graph.add_edge(START, "run_theme_workers")
+    graph.add_edge(START, "prefetch_cache")
+    graph.add_edge("prefetch_cache", "run_theme_workers")
     graph.add_edge("run_theme_workers", "merge_scripts")
     graph.add_edge("merge_scripts", "refine_transitions")
     graph.add_edge("refine_transitions", END)
-    graph.set_entry_point("run_theme_workers")
+    graph.set_entry_point("prefetch_cache")
 
     return graph.compile()
 
@@ -414,6 +509,8 @@ def cleanup_cache() -> None:
     news_files = [
         BASE_DIR / "data/theme/news_list.json",
         BASE_DIR / "data/theme/titles.txt",
+        CALENDAR_CSV_PATH,
+        CALENDAR_JSON_PATH,
     ]
     bodies_dir = BASE_DIR / "data/theme/bodies"
     for file in news_files:

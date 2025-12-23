@@ -13,6 +13,37 @@ from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
+MAX_OHLCV_ROWS = 200
+INTERVAL_OPTIONS = ("1m", "5m", "15m", "30m", "1h", "1d", "1wk", "1mo")
+
+
+def _round3(value: Any) -> Any:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+    try:
+        return round(float(value), 3)
+    except Exception:
+        return value
+
+
+def _as_int(value: Any) -> Any:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+    try:
+        return int(value)
+    except Exception:
+        return value
+
 
 def _normalize(df: pd.DataFrame) -> pd.DataFrame:
     """컬럼 대소문자/멀티인덱스 정리를 수행한다."""
@@ -99,16 +130,38 @@ def get_ohlcv(
         logger.warning("OHLCV 유효 행이 없습니다(모두 NaN): %s", ticker)
         return {**result_base, "rows": []}
 
+    if len(df) > MAX_OHLCV_ROWS:
+        logger.warning(
+            "OHLCV 결과가 너무 큽니다: %s (%d rows, interval=%s, %s~%s)",
+            ticker,
+            len(df),
+            interval,
+            start_dt,
+            end_dt,
+        )
+        return {
+            **result_base,
+            "rows": [],
+            "too_many_rows": True,
+            "row_count": int(len(df)),
+            "max_rows": MAX_OHLCV_ROWS,
+            "message": (
+                f"OHLCV rows가 {len(df)}개로 너무 많습니다(최대 {MAX_OHLCV_ROWS}). "
+                "기간을 더 짧게 하거나 interval을 더 크게 해서 다시 조회하세요."
+            ),
+            "suggested_intervals": list(INTERVAL_OPTIONS),
+        }
+
     rows = []
     for idx, row in df.iterrows():
         rows.append(
             {
                 "ts": pd.to_datetime(idx).isoformat(),
-                "open": row.get("Open"),
-                "high": row.get("High"),
-                "low": row.get("Low"),
-                "close": row.get("Close"),
-                "volume": row.get("Volume"),
+                "open": _round3(row.get("Open")),
+                "high": _round3(row.get("High")),
+                "low": _round3(row.get("Low")),
+                "close": _round3(row.get("Close")),
+                "volume": _as_int(row.get("Volume")),
             }
         )
 

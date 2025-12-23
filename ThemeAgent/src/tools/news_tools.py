@@ -21,6 +21,8 @@ NEWS_LIST_PATH = DATA_DIR / "news_list.json"
 TITLES_PATH = DATA_DIR / "titles.txt"
 BODIES_DIR = DATA_DIR / "bodies"
 
+DEFAULT_NEWS_BODY_MAX_CHARS = 8000
+
 
 def _load_news_list() -> Dict[str, Any]:
     """news_list.json을 로드한다."""
@@ -89,6 +91,27 @@ def _write_body(pk: str, text: str) -> None:
     _body_path(pk).write_text(text, encoding="utf-8")
 
 
+def _clean_body_for_llm(text: str) -> str:
+    # XML/HTML 태그가 섞인 경우가 많아서 LLM 입력 전에는 제거해 토큰을 줄인다.
+    if "<" in text and ">" in text:
+        text = re.sub(r"(?s)<[^>]*>", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _truncate_for_llm(text: str) -> tuple[str, bool]:
+    raw = os.getenv("NEWS_BODY_MAX_CHARS", str(DEFAULT_NEWS_BODY_MAX_CHARS)).strip()
+    try:
+        limit = int(raw)
+    except ValueError:
+        limit = DEFAULT_NEWS_BODY_MAX_CHARS
+    if limit <= 0:
+        return text, False
+    if len(text) <= limit:
+        return text, False
+    return text[:limit].rstrip() + "\n...[truncated]", True
+
+
 def _guess_s3_bucket() -> str:
     return os.getenv("NEWS_BUCKET") or os.getenv("BUCKET_NAME") or ""
 
@@ -135,12 +158,30 @@ def get_news_content(
 
         cached_body = _read_cached_body(pk)
         if cached_body is not None:
-            articles.append({"pk": pk, "title": meta.get("title"), "body": cached_body, "cached": True})
+            body_llm, truncated = _truncate_for_llm(_clean_body_for_llm(cached_body))
+            articles.append(
+                {
+                    "pk": pk,
+                    "title": meta.get("title"),
+                    "body": body_llm,
+                    "cached": True,
+                    "body_truncated": truncated,
+                }
+            )
             continue
 
         body_text = _fetch_body_from_s3(pk, meta.get("path"), bucket)
         _write_body(pk, body_text)
-        articles.append({"pk": pk, "title": meta.get("title"), "body": body_text, "cached": False})
+        body_llm, truncated = _truncate_for_llm(_clean_body_for_llm(body_text))
+        articles.append(
+            {
+                "pk": pk,
+                "title": meta.get("title"),
+                "body": body_llm,
+                "cached": False,
+                "body_truncated": truncated,
+            }
+        )
 
     logger.info("get_news_content 결과: %d건 반환", len(articles))
     return {"count": len(articles), "articles": articles}

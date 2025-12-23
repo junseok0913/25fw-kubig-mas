@@ -50,3 +50,34 @@ def test_get_ohlcv_default_dates(monkeypatch):
     assert res["end_date"] == "2025-11-25"  # BRIEFING_DATE 기준
     assert res["start_date"] == "2025-10-26"  # 30일 전
     assert len(res["rows"]) == 1
+
+
+def test_get_ohlcv_too_many_rows(monkeypatch):
+    """rows가 200개를 초과하면 rows를 비우고 재조회 가이드를 반환한다."""
+    def fake_download(ticker, start, end, interval, progress, auto_adjust, threads):
+        idx = pd.date_range("2025-01-01", periods=201, freq="D")
+        df = pd.DataFrame(
+            {
+                "Open": [1] * 201,
+                "High": [2] * 201,
+                "Low": [0.5] * 201,
+                "Close": [1.5] * 201,
+                "Volume": [100] * 201,
+            },
+            index=idx,
+        )
+        return df
+
+    monkeypatch.setattr(ohlcv.yf, "download", fake_download)
+    res = ohlcv.get_ohlcv.invoke(
+        {
+            "ticker": "NVDA",
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31",
+            "interval": "1d",
+        }
+    )
+    assert res["too_many_rows"] is True
+    assert res["row_count"] == 201
+    assert res["max_rows"] == 200
+    assert res["rows"] == []

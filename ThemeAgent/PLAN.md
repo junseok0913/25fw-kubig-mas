@@ -119,7 +119,8 @@ ThemeAgent/
 ├── ARCHITECTURE.md        # (선택) 구현 완료 후 실제 구조 요약
 ├── PLAN.md                # (현재 파일)
 ├── prompt/
-│   └── theme_script.yaml  # 테마별 심층 대본 프롬프트
+│   ├── theme_worker.yaml  # 테마별 심층 대본 프롬프트(Worker)
+│   └── theme_refine.yaml  # 전환/문맥 편집 프롬프트(Refiner)
 ├── src/
 │   ├── __init__.py
 │   └── theme_agent.py     # LangGraph 그래프 정의
@@ -366,7 +367,7 @@ flowchart TD
 #### 5-2-4. `prepare_messages` 노드
 
 - 역할:
-  - `ThemeAgent/prompt/theme_script.yaml`의 `system` / `user_template`를 로드
+  - `ThemeAgent/prompt/theme_worker.yaml` / `ThemeAgent/prompt/theme_refine.yaml`를 로드
   - 플레이스홀더 치환:
     - `{{date}}` → 한국어 날짜 (예: `"11월 25일"`)
     - `{{nutshell}}` → OpeningAgent가 만든 시장 한마디
@@ -420,7 +421,7 @@ flowchart TD
 
 ---
 
-## 6. 프롬프트 설계 (`prompt/theme_script.yaml`)
+## 6. 프롬프트 설계 (`prompt/theme_worker.yaml`, `prompt/theme_refine.yaml`)
 
 ### 6-1. System 메시지 핵심 요구사항
 
@@ -492,7 +493,7 @@ flowchart TD
      - `_load_env`, `_build_llm`, `_format_date_korean` 등 OpeningAgent에서 재사용 가능한 유틸 복사/조정
      - `build_theme_graph()`에서 `split_themes` → `run_theme_workers` → `merge_scripts` → `refine_transitions` 플로우 구성
      - `build_worker_graph()`에서 `prefetch_news` → `load_context` → `prepare_messages` → `agent` ⇄ `tools` → `extract_scripts` 플로우 구성
-   - Worker용/Refiner용 프롬프트를 `ThemeAgent/prompt/theme_script.yaml` 또는 별도 파일로 초안 작성
+   - Worker/Refiner 프롬프트를 `ThemeAgent/prompt/theme_worker.yaml`, `ThemeAgent/prompt/theme_refine.yaml`에 작성
 2. **orchestrator 연동**
    - `orchestrator.py`의 `theme_node`를 ThemeAgent 호출 방식으로 변경
    - `opening_agent.cleanup_cache()` 호출 위치 재검토 (ThemeAgent에서도 뉴스 캐시를 사용할 경우)
