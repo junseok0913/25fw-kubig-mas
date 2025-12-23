@@ -2,7 +2,7 @@ meta:
   description: "오프닝 대본 생성 프롬프트"
   language: "ko"
   model_hint: "gpt-5.1, reasoning_effort=medium"
-  last_updated: "2025-12-23"
+  last_updated: "2025-12-23 (calendar integrated)"
 
 system: |
   <role>
@@ -71,16 +71,33 @@ system: |
   </parameters>
   <returns>{ticker, start_date, end_date, interval, rows[{ts, open, high, low, close, volume}]}</returns>
   </tool>
+
+  <tool name="get_calendar">
+  <description>경제 캘린더 이벤트 상세 조회 (id 또는 날짜 기준)</description>
+  <parameters>
+    - id: calendar_context에 있는 이벤트 id (예: "417228")
+    - date: YYYYMMDD(EST 기준) 또는 ["YYYYMMDD", ...]
+  </parameters>
+  <returns>
+    - id 모드: {mode:"id", found:true|false, event}
+    - date 모드: {mode:"date", count, dates, events[*]}
+  </returns>
+  </tool>
   </available_tools>
 
   <workflow>
   <step number="1" name="뉴스 및 데이터 탐색">
-  - 먼저 뉴스 제목 전체를 개괄적으로 보기 위해 적절히 툴을 사용합니다.
+  - 뉴스 제목 전체를 개괄적으로 보기 위해 적절히 툴을 사용합니다.
     - 예: get_news_list(), 또는 count_keyword_frequency(source="titles")로
       주요 키워드 후보들의 빈도를 확인할 수 있습니다.
   - 그 다음, 눈에 띄는 키워드나 티커를 바탕으로
     - get_news_list(tickers=..., keywords=...)로 관련 기사를 좁혀보고,
     - get_news_content(pks=...)로 본문을 조회합니다.
+  - 경제 캘린더 이벤트를 조회하고 오늘 시장에 영향을 미친 요소들을 분석합니다.
+    - get_calendar()로 경제 캘린더 이벤트를 조회합니다.
+    - 뉴스 기사와 연계해서 각 경제 캘린더 이벤트의 영향이 시장에 얼만큼 미쳤는지 평가합니다.
+    - 오늘의 이벤트 뿐만 아니라 과거의 이벤트가 재해석되며 오늘까지 영향을 미칠 수 있습니다.
+    - 미래의 이벤트도 예상치 발표와 시장의 기대로 인하여 오늘 시장에 미리 영향을 미칠 수 있습니다.
   - 테마의 강도를 정량적으로 판단하고 싶을 때
     - count_keyword_frequency(keywords=[테마 관련 키워드들], source="titles")
       로 제목에서의 빈도를 확인합니다.
@@ -230,6 +247,11 @@ user_template: |
   뉴스 제목에서 추출한 상위 50개 단어 빈도입니다.
   {title_top_words}
   </top_keywords>
+
+  <economic_calendar>
+  경제 캘린더 목록(EST 기준)입니다. 각 줄은: id, est_date(YYYYMMDD), title
+  {calendar_context}
+  </economic_calendar>
   </context>
 
   <instruction>
@@ -239,6 +261,7 @@ user_template: |
   - 오늘은 {date} 입니다.
   - 시장 컨텍스트(market_summary)는 힌트일 뿐, 도구로 반드시 검증하세요.
   - FOMC/FED 관련 기사가 있는지 면밀히 확인하세요.
+  - FOMC/FED/주요 경제지표 이벤트가 있는지 위 경제 캘린더를 확인하고, 상세는 get_calendar(id=...)로 조회하세요.
   - 최소 10개 이상의 기사 본문을 읽어야 합니다.
   - 뉴스 제목에서 추출한 상위 50개 단어 빈도(title_top_words)는 힌트일 뿐, 도구로 반드시 검증하세요.
   </instruction>

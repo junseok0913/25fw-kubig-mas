@@ -29,9 +29,11 @@ from langgraph.prebuilt import ToolNode
 import yaml
 
 from src import context_today, prefetch
+from src.calendar import prefetch_calendar
 from src.utils.tracing import configure_tracing
 from src.tools import (
     count_keyword_frequency,
+    get_calendar,
     get_news_content,
     get_news_list,
     get_ohlcv,
@@ -48,8 +50,10 @@ ROOT_DIR = BASE_DIR.parent  # repo root
 # 컨텍스트 파일 경로 (yfinance 수집 결과)
 CONTEXT_PATH = BASE_DIR / "data/market_context.json"
 # 프롬프트 YAML 경로
-PROMPT_PATH = BASE_DIR / "prompt/opening_script.yaml"
+PROMPT_PATH = BASE_DIR / "prompt/opening_script_with_calendar.yaml"
 TITLES_PATH = BASE_DIR / "data/opening/titles.txt"
+CALENDAR_CSV_PATH = BASE_DIR / "data/opening/calendar.csv"
+CALENDAR_JSON_PATH = BASE_DIR / "data/opening/calendar.json"
 # 불용어 파일 경로
 STOPWORDS_PATH = BASE_DIR / "config/stopwords.txt"
 # 최종 결과 JSON 저장 경로
@@ -66,6 +70,7 @@ TOOLS = [
     get_news_content,
     list_downloaded_bodies,
     count_keyword_frequency,
+    get_calendar,
     get_ohlcv,
 ]
 
@@ -199,6 +204,12 @@ def prefetch_node(state: OpeningState) -> OpeningState:
     except Exception as exc:  # noqa: BLE001
         logger.warning("프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
         payload = {}
+
+    try:
+        cal_payload = prefetch_calendar(date_str)
+        logger.info("캘린더 프리페치 완료: %d건 (날짜: %s)", cal_payload.get("count", 0), date_str)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("캘린더 프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
     return {**state, "news_meta": payload}
 
 
@@ -232,6 +243,32 @@ def load_prompt() -> Dict[str, str]:
     if not system or not user_template:
         raise ValueError("프롬프트 YAML에 system 또는 user_template가 비어 있습니다.")
     return {"system": system, "user_template": user_template}
+
+
+def _load_calendar_context() -> str:
+    """calendar.csv를 읽어 프롬프트에 넣을 최소 컨텍스트 문자열을 만든다.
+
+    각 줄: id, est_date(YYYYMMDD), title (TSV)
+    """
+    if not CALENDAR_CSV_PATH.exists():
+        return ""
+
+    import csv
+
+    lines: list[str] = ["id\test_date\ttitle"]
+    with CALENDAR_CSV_PATH.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            lines.append(
+                "\t".join(
+                    [
+                        str(row.get("id") or "").strip(),
+                        str(row.get("est_date") or "").strip(),
+                        str(row.get("title") or "").strip(),
+                    ]
+                ).rstrip()
+            )
+    return "\n".join(lines).strip()
 
 
 def _build_llm() -> ChatOpenAI:
@@ -284,8 +321,16 @@ def _prepare_initial_messages(state: OpeningState) -> OpeningState:
 
     # {context_json} 플레이스홀더를 컨텍스트로 대체
     # {date} 플레이스홀더를 한국어 날짜로 대체
+    title_top_words = json.dumps(context.get("title_top_words", []), ensure_ascii=False, indent=2)
+    calendar_context = _load_calendar_context()
+    context_for_prompt = dict(context)
+    context_for_prompt.pop("title_top_words", None)
     user_prompt = prompt_cfg["user_template"].replace(
-        "{context_json}", json.dumps(context, ensure_ascii=False, indent=2)
+        "{context_json}", json.dumps(context_for_prompt, ensure_ascii=False, indent=2)
+    ).replace(
+        "{title_top_words}", title_top_words
+    ).replace(
+        "{calendar_context}", calendar_context
     ).replace(
         "{date}", date_korean
     )
@@ -432,6 +477,8 @@ def cleanup_cache() -> None:
         BASE_DIR / "data/opening/news_list.json",
         BASE_DIR / "data/opening/titles.txt",
         BASE_DIR / "data/market_context.json",
+        CALENDAR_CSV_PATH,
+        CALENDAR_JSON_PATH,
     ]
     bodies_dir = BASE_DIR / "data/opening/bodies"
     for file in news_files:
