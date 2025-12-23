@@ -76,7 +76,7 @@ system: |
   <description>경제 캘린더 이벤트 상세 조회 (id 또는 날짜 기준)</description>
   <parameters>
     - id: calendar_context에 있는 이벤트 id (예: "417228")
-    - date: YYYYMMDD(EST 기준) 또는 ["YYYYMMDD", ...]
+    - date: YYYYMMDD(EST 기준) 또는 ["YYYYMMDD", ...] 또는 "YYYYMMDD,YYYYMMDD"
   </parameters>
   <returns>
     - id 모드: {mode:"id", found:true|false, event}

@@ -1,6 +1,8 @@
-"""Calendar prefetch utilities for OpeningAgent."""
+"""Calendar prefetch utilities for OpeningAgent.
 
-from .prefetch_calendar import prefetch_calendar
+Deprecated: calendar 프리페치는 `src.prefetch.prefetch_calendar`로 통합됨.
+"""
+
+from src.prefetch import prefetch_calendar
 
 __all__ = ["prefetch_calendar"]
-

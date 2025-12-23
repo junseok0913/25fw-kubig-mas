@@ -29,7 +29,6 @@ from langgraph.prebuilt import ToolNode
 import yaml
 
 from src import context_today, prefetch
-from src.calendar import prefetch_calendar
 from src.utils.tracing import configure_tracing
 from src.tools import (
     count_keyword_frequency,
@@ -50,7 +49,7 @@ ROOT_DIR = BASE_DIR.parent  # repo root
 # 컨텍스트 파일 경로 (yfinance 수집 결과)
 CONTEXT_PATH = BASE_DIR / "data/market_context.json"
 # 프롬프트 YAML 경로
-PROMPT_PATH = BASE_DIR / "prompt/opening_script_with_calendar.yaml"
+PROMPT_PATH = BASE_DIR / "prompt/opening_main.yaml"
 TITLES_PATH = BASE_DIR / "data/opening/titles.txt"
 CALENDAR_CSV_PATH = BASE_DIR / "data/opening/calendar.csv"
 CALENDAR_JSON_PATH = BASE_DIR / "data/opening/calendar.json"
@@ -206,7 +205,7 @@ def prefetch_node(state: OpeningState) -> OpeningState:
         payload = {}
 
     try:
-        cal_payload = prefetch_calendar(date_str)
+        cal_payload = prefetch.prefetch_calendar(today=date_obj)
         logger.info("캘린더 프리페치 완료: %d건 (날짜: %s)", cal_payload.get("count", 0), date_str)
     except Exception as exc:  # noqa: BLE001
         logger.warning("캘린더 프리페치 실패, 그래프는 계속 진행합니다: %s", exc)
