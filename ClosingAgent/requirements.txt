@@ -1,0 +1,15 @@
+pandas
+pytz
+yfinance
+langchain-openai
+langchain-core
+langgraph
+openai
+python-dotenv
+pyyaml
+requests
+beautifulsoup4
+boto3
+langsmith
+langchain
+pytest

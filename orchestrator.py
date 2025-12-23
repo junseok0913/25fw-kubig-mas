@@ -1,13 +1,14 @@
 """
 상위 LangGraph 오케스트레이터.
 
-OpeningAgent → ThemeAgent 순서로 에이전트를 실행하는 그래프를 구성한다.
+OpeningAgent → ThemeAgent → ClosingAgent 순서로 에이전트를 실행하는 그래프를 구성한다.
 --stage 옵션으로 어느 에이전트까지 실행할지 제어할 수 있다.
 
 Usage:
-    python orchestrator.py 20251125                # ThemeAgent까지 실행 (기본값)
+    python orchestrator.py 20251125                # ClosingAgent까지 실행 (기본값)
     python orchestrator.py 2025-11-25 --stage 0    # OpeningAgent만 실행
     python orchestrator.py 20251125 --stage 1      # ThemeAgent까지 실행
+    python orchestrator.py 20251125 --stage 2      # ClosingAgent까지 실행
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ if str(OPENING_AGENT_ROOT) not in sys.path:
 from src import opening_agent  # noqa: E402
 from src.utils.tracing import configure_tracing  # noqa: E402
 from ThemeAgent.src import theme_agent  # noqa: E402
+from ClosingAgent.src import closing_agent  # noqa: E402
 
 
 def parse_date_arg(date_str: str) -> str:
@@ -160,17 +162,48 @@ def theme_node(state: BriefingState) -> BriefingState:
     return {
         **state,
         "scripts": result.get("scripts", []),
-        "current_section": "stock",
+        "current_section": "closing",
     }
 
 
-def build_orchestrator(stage: int = 1):
+def closing_node(state: BriefingState) -> BriefingState:
+    """ClosingAgent를 실행해 클로징(마무리) 파트를 생성한다."""
+    import os
+
+    date_str = state.get("date")
+    if not date_str:
+        raise ValueError("date 필드가 state에 없습니다. orchestrator 실행 시 날짜를 지정하세요.")
+
+    os.environ["BRIEFING_DATE"] = date_str
+
+    ca_graph = closing_agent.build_graph()
+    result = ca_graph.invoke(
+        {
+            "date": date_str,
+            "scripts": state.get("scripts", []),
+        }
+    )
+
+    try:
+        closing_agent.cleanup_cache()
+    except Exception:
+        pass
+
+    return {
+        **state,
+        "scripts": result.get("scripts", []),
+        "current_section": "closing",
+    }
+
+
+def build_orchestrator(stage: int = 2):
     """상위 그래프를 컴파일한다.
     
     Args:
         stage: 실행할 에이전트 단계
             0 - OpeningAgent만 실행
-            1 - ThemeAgent까지 실행 (기본값)
+            1 - ThemeAgent까지 실행
+            2 - ClosingAgent까지 실행 (기본값)
     """
     load_dotenv(ROOT / ".env", override=False)
     configure_tracing()
@@ -181,9 +214,13 @@ def build_orchestrator(stage: int = 1):
     if stage >= 1:
         graph.add_node("theme", theme_node)
         graph.add_edge("opening", "theme")
-        graph.add_edge("theme", END)
+        if stage >= 2:
+            graph.add_node("closing", closing_node)
+            graph.add_edge("theme", "closing")
+            graph.add_edge("closing", END)
+        else:
+            graph.add_edge("theme", END)
     else:
-        # stage == 0: OpeningAgent만 실행
         graph.add_edge("opening", END)
 
     return graph.compile()
@@ -211,9 +248,9 @@ def main() -> None:
     parser.add_argument(
         "--stage",
         type=int,
-        default=1,
-        choices=[0, 1],
-        help="실행할 에이전트 단계 (0: OpeningAgent만, 1: ThemeAgent까지, 기본값: 1)"
+        default=2,
+        choices=[0, 1, 2],
+        help="실행할 에이전트 단계 (0: OpeningAgent만, 1: ThemeAgent까지, 2: ClosingAgent까지, 기본값: 2)"
     )
     args = parser.parse_args()
     
@@ -224,7 +261,7 @@ def main() -> None:
         print(f"오류: {e}", file=sys.stderr)
         sys.exit(1)
     
-    stage_names = {0: "OpeningAgent", 1: "ThemeAgent"}
+    stage_names = {0: "OpeningAgent", 1: "ThemeAgent", 2: "ClosingAgent"}
     date_korean = format_date_korean(date_yyyymmdd)
     print(f"=== {date_korean} 장마감 브리핑 시작 ===")
     print(f"날짜: {date_yyyymmdd} (EST)")

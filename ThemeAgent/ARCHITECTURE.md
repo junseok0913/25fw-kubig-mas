@@ -109,13 +109,13 @@ ThemeAgent는 내부적으로 **ThemeGraph + ThemeWorkerGraph × N** 구조를 �
 ```mermaid
 flowchart TD
     TG_START([START])
-    SPLIT[split_themes<br/>Theme별 입력 분리]
+    PF[prefetch_cache<br/>뉴스 + TE 캘린더 프리페치]
     PAR[run_theme_workers<br/>ThemeWorkerGraph × N 병렬 실행]
     MERGE[merge_scripts<br/>Opening + Theme 스크립트 병합]
     REF[refine_transitions<br/>전환·톤 편집 LLM 호출]
     TG_END([END])
 
-    TG_START --> SPLIT --> PAR --> MERGE --> REF --> TG_END
+    TG_START --> PF --> PAR --> MERGE --> REF --> TG_END
 ```
 
 ### 3-2. ThemeGraph 상태 스키마 (`ThemeState`)
@@ -139,24 +139,13 @@ class ThemeState(TypedDict, total=False):
 
 ### 3-3. ThemeGraph 노드별 역할
 
-- **`split_themes`**
-  - `themes[]`를 순회하며 각 ThemeWorker에 전달할 입력 패킷을 생성.
-  - 예:
-    ```python
-    worker_inputs = [
-        {
-            "date": state["date"],
-            "nutshell": state["nutshell"],
-            "theme": theme,
-            "base_scripts": state.get("base_scripts", []),
-        }
-        for theme in state.get("themes", [])
-    ]
-    ```
+ - **`prefetch_cache`**
+   - ThemeAgent 실행 시작 시 1회만 수행한다.
+   - DynamoDB 뉴스 메타 프리페치(`prefetch.prefetch_news`)로 `data/theme/news_list.json`/`titles.txt` 캐시 생성.
+   - TradingEconomics 경제 캘린더 프리페치(`prefetch.prefetch_calendar`)로 `data/theme/calendar.csv`/`calendar.json` 생성.
 
 - **`run_theme_workers`**
-  - 각 입력에 대해 `ThemeWorkerGraph`를 **병렬 실행**.
-    - 예: `asyncio.gather(*(worker_graph.ainvoke(inp) for inp in worker_inputs))`
+  - `themes[]`를 순회하며 ThemeWorker 입력을 만들고, `ThemeWorkerGraph`를 **병렬 실행**한다.
   - 결과를 `theme_scripts`에 저장:
     ```python
     theme_results = [...]  # [{"scripts": [...]}, ...]
@@ -184,6 +173,7 @@ class ThemeState(TypedDict, total=False):
       Opening → Theme1, Theme1 → Theme2 등 **경계 지점**에서 전환이 부드럽도록  
       연결 문장/브릿지 멘트를 추가·수정.
     - 사실/수치/출처는 최대한 유지하고, 표현/호흡만 다듬는 **방송 대본 편집자** 역할.
+    - Refiner 단계는 Tool을 바인딩하지 않는다(단순 편집).
   - 입력:
     - `ThemeState.scripts` (Opening+Theme 전체)
     - `themes`, `nutshell` (참고용)
@@ -197,6 +187,9 @@ class ThemeState(TypedDict, total=False):
     }
     ```
   - Refiner는 새로운 배열을 반환하고, 이를 `ThemeState["scripts"]`에 덮어씀.
+  - 운영 안전장치:
+    - Refiner 입력 JSON은 indent 없이 압축해 전송해 토큰/전송량을 줄인다.
+    - 타임아웃/네트워크 오류 시, refine 없이 merge 결과를 그대로 사용한다.
 
 ---
 
@@ -209,15 +202,14 @@ class ThemeState(TypedDict, total=False):
 ```mermaid
 flowchart TD
     TW_START([START])
-    PF[prefetch_news<br/>DynamoDB→뉴스 메타 캐시]
     CTX[load_context<br/>단일 테마 컨텍스트 구성]
     MSG[prepare_messages<br/>프롬프트 구성]
     AG[agent<br/>Tool 바인딩 LLM 호출]
-    TL[tools<br/>뉴스/OHLCV Tool 실행]
+    TL[tools<br/>뉴스/OHLCV/캘린더 Tool 실행]
     EX[extract_scripts<br/>해당 테마 스크립트 추출]
     TW_END([END])
 
-    TW_START --> PF --> CTX --> MSG --> AG
+    TW_START --> CTX --> MSG --> AG
     AG -->|tool_calls 있음| TL --> AG
     AG -->|tool_calls 없음| EX --> TW_END
 ```
@@ -244,28 +236,19 @@ class ThemeWorkerState(TypedDict, total=False):
 
 ### 4-3. Worker 노드별 역할
 
-#### `prefetch_news`
+#### (참고) 프리페치
 
-- OpeningAgent의 `prefetch_news(today=...)`와 **동일한 시간 범위/쿼리 로직**으로 동작.
-  - 입력: `date` (YYYYMMDD, EST 기준)
-  - 처리:
-    - `date` 기준 전일 16:00 ET ~ 당일 18:00 ET 범위를 계산.
-    - DynamoDB `NEWS_TABLE`의 `gsi_latest_utc`를 쿼리하여 이 범위의 뉴스 메타데이터를 조회.
-  - 출력(파일):
-    - ThemeAgent 전용 캐시 디렉터리 (예시)
-      ```text
-      ThemeAgent/data/opening/
-      ├── news_list.json   # DynamoDB 조회 결과 (메타데이터)
-      ├── titles.txt       # 모든 뉴스 제목
-      └── bodies/          # 본문 캐시 (Tool을 통해 온디맨드로 채워짐)
-      ```
-  - ThemeAgent 실행이 끝나면 `cleanup_cache()`에서 위 디렉터리를 삭제.
+- WorkerGraph에서는 프리페치를 수행하지 않는다.
+- ThemeGraph의 `prefetch_cache`에서 뉴스(`data/theme/news_list.json`, `titles.txt`)와
+  캘린더(`data/theme/calendar.csv`, `calendar.json`)를 1회 생성한 뒤,
+  ThemeWorker들은 해당 로컬 캐시를 조회하는 구조다.
 
 #### `load_context`
 
 - 역할:
-  - `theme`와 `related_news` 정보, 그리고 `prefetch_news`에서 준비한 로컬 캐시를 바탕으로
+  - `theme`와 `related_news` 정보, 그리고 `prefetch_cache`에서 준비한 로컬 캐시를 바탕으로
     **이 테마 전용 컨텍스트 JSON**을 구성.
+  - (현재 구현) `theme_context`는 입력 테마+nutshell 요약만 포함하며, 뉴스/지표/캘린더 조회는 Tool을 통해 수행한다.
   - 1차 구현 예:
     - `theme.headline`, `theme.description`
     - `related_news`의 제목/티커 요약
@@ -278,14 +261,15 @@ class ThemeWorkerState(TypedDict, total=False):
 #### `prepare_messages`
 
 - 역할:
-  - `ThemeAgent/prompt/theme_worker.yaml` / `ThemeAgent/prompt/theme_refine.yaml`를 로드.
+  - `ThemeAgent/prompt/theme_worker.yaml`를 로드.
   - 플레이스홀더 치환:
-    - `{{date}}` → 한국어 날짜 (예: `"11월 25일"`)
-    - `{{nutshell}}` → 오늘 시장 한마디
-    - `{{theme}}` → 현재 단일 테마의 headline/description/related_news 요약
-    - `{{theme_context}}` → 위에서 구성한 테마 컨텍스트 JSON
-    - `{{base_scripts}}` → (선택) 오프닝 스크립트 전체, 맥락 전달용
-    - `{{tools}}` → 바인딩된 Tool 목록/설명
+    - `{date}` → 한국어 날짜 (예: `"11월 25일"`)
+    - `{nutshell}` → 오늘 시장 한마디
+    - `{theme}` → 현재 단일 테마의 headline/description/related_news 요약
+    - `{theme_context}` → 위에서 구성한 테마 컨텍스트 JSON
+    - `{base_scripts}` → (선택) 오프닝 스크립트 전체, 맥락 전달용
+    - `{calendar_context}` → 캘린더 TSV(id, est_date, title)
+    - `{tools}` → 바인딩된 Tool 목록/설명
   - 출력:
     - `state["messages"] = [SystemMessage(...), HumanMessage(...)]`
 
@@ -331,37 +315,31 @@ class ThemeWorkerState(TypedDict, total=False):
 
 ### 5-1. Tool 목록 (OpeningAgent와 공통)
 
-ThemeAgent에서도 OpeningAgent의 Tool 세트를 그대로 바인딩한다.
+ThemeAgent에서도 뉴스/지표/캘린더 Tool을 바인딩해 사용한다.
 
 | Tool | 설명 |
 |------|------|
 | `get_news_list` | 로컬 캐시된 뉴스 목록 필터링 (tickers, keywords) |
-| `get_news_content` | S3에서 뉴스 본문 조회 또는 로컬 캐시 반환 |
+| `get_news_content` | S3에서 뉴스 본문 조회 또는 로컬 캐시 반환 (LLM 입력용: 태그 제거/길이 절단) |
 | `list_downloaded_bodies` | 로컬에 저장된 본문 파일 목록 반환 |
 | `count_keyword_frequency` | 제목/본문에서 키워드 출현 빈도 계산 |
-| `get_ohlcv` | yfinance로 과거 OHLCV 데이터 조회 |
+| `get_calendar` | 프리페치된 캘린더에서 이벤트 상세 조회(id/date) |
+| `get_ohlcv` | yfinance로 과거 OHLCV 데이터 조회 (행 수 제한/반올림 포함) |
 
-- 구현 시에는 `OpeningAgent/src/tools/*.py`를 재사용하되,  
-  캐시 경로만 ThemeAgent용 디렉터리로 맞추는 식으로 정리.
+- `get_ohlcv`는 rows가 200개를 초과하면 `rows=[]`와 함께 재조회 가이드를 반환하며,
+  open/high/low/close는 소수점 3자리로 반올림해 반환한다.
 
 ### 5-2. ThemeAgent 캐시 디렉터리 (예시)
 
 ```text
-ThemeAgent/data/theme1/
-├── news_list.json          # DynamoDB 조회 결과 (prefetch_news)
-├── titles.txt              # 모든 뉴스 제목 (prefetch_news)
+ThemeAgent/data/theme/
+├── news_list.json          # DynamoDB 조회 결과 (prefetch_cache)
+├── titles.txt              # 모든 뉴스 제목 (prefetch_cache)
+├── calendar.csv            # 경제 캘린더 목록 (prefetch_cache)
+├── calendar.json           # 경제 캘린더 상세 (prefetch_cache)
 └── bodies/                 # get_news_content가 온디맨드로 채우는 본문 캐시
     ├── h#abcdef01.txt
-    ├── h#12345678.txt
     └── ...
-ThemeAgent/data/theme2/
-├── news_list.json          # DynamoDB 조회 결과 (prefetch_news)
-├── titles.txt              # 모든 뉴스 제목 (prefetch_news)
-└── bodies/                 # get_news_content가 온디맨드로 채우는 본문 캐시
-    ├── h#abcdef01.txt
-    ├── h#12345678.txt
-    └── ...
-...
 ```
 
 - ThemeAgent는 실행이 끝난 후 `cleanup_cache()`에서 위 디렉터리 및 임시 파일들을 삭제한다.
@@ -384,11 +362,16 @@ ThemeAgent/data/theme2/
 OpeningAgent와 동일한 환경변수 세트를 사용한다.
 
 - OpenAI:
-  - `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_TEMPERATURE`
+  - 공통: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`(추론 모델일 때만), `OPENAI_TEMPERATURE`, `OPENAI_TIMEOUT`, `OPENAI_MAX_RETRIES`
+  - ThemeAgent 오버라이드:
+    - Worker: `THEME_WORKER_OPENAI_*`
+    - Refiner: `THEME_REFINER_OPENAI_*`
+  - Refiner 전용 timeout(호환): `OPENAI_REFINER_TIMEOUT`
 - AWS/SSO:
   - `AWS_SDK_LOAD_CONFIG=1`
   - `AWS_PROFILE`, `AWS_REGION`
   - `NEWS_TABLE`, `NEWS_BUCKET`
+- Tool 출력 제한: `NEWS_BODY_MAX_CHARS` (get_news_content가 LLM 입력용 body를 절단)
 - 기타:
   - LangSmith/LangChain 추적: `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`, `LANGCHAIN_ENDPOINT`(선택)
 
