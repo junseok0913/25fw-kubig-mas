@@ -129,6 +129,34 @@ def _looks_like_model_not_found(exc: Exception) -> bool:
     return ("model_not_found" in msg) or ("does not exist" in msg) or ("do not have access" in msg)
 
 
+def _get_refiner_max_retries() -> int:
+    """Refiner의 '파싱/스키마 불일치' 재시도 횟수를 반환한다.
+
+    우선순위:
+      1) THEME_REFINER_OPENAI_MAX_RETRIES
+      2) OPENAI_MAX_RETRIES
+      3) 기본값 2
+
+    빈 문자열은 미설정으로 간주한다.
+    """
+
+    def _getenv_nonempty(name: str) -> str | None:
+        v = os.getenv(name)
+        if v is None:
+            return None
+        v = v.strip()
+        return v if v else None
+
+    raw = _getenv_nonempty("THEME_REFINER_OPENAI_MAX_RETRIES") or _getenv_nonempty("OPENAI_MAX_RETRIES")
+    if raw is None:
+        return 2
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("잘못된 재시도 값입니다: %r (기본값 2 사용)", raw)
+        return 2
+
+
 def _parse_json_from_response(content: str) -> Dict[str, Any]:
     """AI 응답에서 JSON을 추출하고 파싱한다."""
     json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
@@ -582,14 +610,24 @@ def build_theme_graph():
         for theme_sc in state.get("theme_scripts", []) or []:
             merged.extend(theme_sc)
 
-        return {**state, "scripts": merged}
+        # Refiner가 'id 기반 patch'를 적용할 수 있도록, 여기서 전역 id(0..N-1)를 먼저 부여한다.
+        normalized = _normalize_script_turns(merged)
+        return {**state, "scripts": normalized}
 
     def refine_transitions(state: ThemeState) -> ThemeState:
         prompt_cfg = _load_prompt()
         llm = _build_llm(profile="refiner")
 
-        # Refiner 입력은 커질 수 있으므로(Opening+Theme 전체) 최대한 압축해 전송한다.
-        scripts_json = json.dumps(state.get("scripts", []), ensure_ascii=False, separators=(",", ":"))
+        scripts = state.get("scripts", []) or []
+
+        # Refiner에는 sources를 제공하지 않는다(토큰 절감 + sources 건드림 방지).
+        scripts_minimal = [
+            {"id": t.get("id"), "speaker": t.get("speaker"), "text": t.get("text")}
+            for t in scripts
+            if isinstance(t, dict)
+        ]
+
+        scripts_minimal_json = json.dumps(scripts_minimal, ensure_ascii=False, separators=(",", ":"))
         themes_json = json.dumps(state.get("themes", []), ensure_ascii=False, separators=(",", ":"))
         date_str = state.get("date") or ""
         date_korean = _format_date_korean(date_str.replace("-", "")) if date_str else ""
@@ -597,7 +635,7 @@ def build_theme_graph():
         system_prompt = prompt_cfg["refiner_system"].replace("{date}", date_korean)
         human_prompt = (
             prompt_cfg["refiner_user_template"]
-            .replace("{scripts}", scripts_json)
+            .replace("{scripts_minimal}", scripts_minimal_json)
             .replace("{themes}", themes_json)
             .replace("{date}", date_korean)
         )
@@ -615,49 +653,155 @@ def build_theme_graph():
             )
         )
 
-        parsed: Any
-        try:
-            response = llm.invoke(messages, config={"timeout": timeout})
-            logger.info("Refiner 응답 수신")
-            parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
-        except Exception as exc:  # noqa: BLE001
-            # 모델 이름 오타/권한 문제는 설정 문제이므로, 자동으로 공통(또는 worker) 모델로 1회 폴백해 시도한다.
-            if _looks_like_model_not_found(exc):
-                fallback_llm = _build_llm(profile="worker")
-                logger.warning(
-                    "Refiner 모델 접근 불가로 폴백합니다: %s -> %s",
-                    os.getenv("THEME_REFINER_OPENAI_MODEL") or os.getenv("OPENAI_MODEL"),
-                    os.getenv("THEME_WORKER_OPENAI_MODEL") or os.getenv("OPENAI_MODEL"),
-                )
-                try:
-                    response = fallback_llm.invoke(messages, config={"timeout": timeout})
-                    logger.info("Refiner(폴백) 응답 수신")
-                    parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
-                except Exception as exc2:  # noqa: BLE001
-                    logger.warning("Refiner(폴백) 호출 실패: %s", exc2)
-                    parsed = {}
-            else:
-                logger.warning("Refiner 호출 실패(타임아웃/네트워크 등): %s", exc)
-                parsed = {}
-        refined_scripts: List[ScriptTurn] | Any
-        if isinstance(parsed, list):
-            refined_scripts = parsed  # 이미 배열 형태로 응답
-        elif isinstance(parsed, dict):
-            refined_scripts = parsed.get("scripts", [])
-        else:
-            refined_scripts = []
-        if not refined_scripts:
-            logger.warning("Refiner가 유효한 scripts를 반환하지 않아 merge 결과를 그대로 사용합니다.")
-            refined_scripts = state.get("scripts", [])
-        else:
-            logger.info("Refiner 결과 수신: %d턴", len(refined_scripts))
+        max_retries = _get_refiner_max_retries()
+        max_attempts = 1 + max_retries
 
-        refined_scripts = _normalize_script_turns(refined_scripts)
+        def _parse_edits(parsed: Any) -> List[Dict[str, Any]] | None:
+            if not isinstance(parsed, dict):
+                return None
+            edits = parsed.get("edits")
+            if not isinstance(edits, list):
+                return None
+            return edits
+
+        def _validate_edits(edits: List[Dict[str, Any]], *, scripts_len: int) -> List[Dict[str, Any]] | None:
+            seen: set[int] = set()
+            out: List[Dict[str, Any]] = []
+            for idx, edit in enumerate(edits):
+                if not isinstance(edit, dict):
+                    logger.error("Refiner edits[%d] 스키마 불일치: 객체가 아닙니다.", idx)
+                    return None
+                if set(edit.keys()) != {"id", "speaker", "text"}:
+                    logger.error(
+                        "Refiner edits[%d] 스키마 불일치: 허용 키는 id/speaker/text만 (%s)",
+                        idx,
+                        sorted(edit.keys()),
+                    )
+                    return None
+
+                raw_id = edit.get("id")
+                if isinstance(raw_id, bool):
+                    logger.error("Refiner edits[%d].id 스키마 불일치: %r", idx, raw_id)
+                    return None
+                if isinstance(raw_id, int):
+                    turn_id = raw_id
+                elif isinstance(raw_id, str) and raw_id.strip().isdigit():
+                    turn_id = int(raw_id.strip())
+                else:
+                    logger.error("Refiner edits[%d].id 스키마 불일치: %r", idx, raw_id)
+                    return None
+                if turn_id < 0 or turn_id >= scripts_len:
+                    logger.error("Refiner edits[%d].id 범위 오류: %d (scripts_len=%d)", idx, turn_id, scripts_len)
+                    return None
+                if turn_id in seen:
+                    logger.error("Refiner edits[%d] 중복 id: %d", idx, turn_id)
+                    return None
+                seen.add(turn_id)
+
+                speaker = edit.get("speaker")
+                if speaker not in {"진행자", "해설자"}:
+                    logger.error("Refiner edits[%d].speaker 스키마 불일치: %r", idx, speaker)
+                    return None
+
+                text = edit.get("text")
+                if not _is_nonempty_str(text):
+                    logger.error("Refiner edits[%d].text 스키마 불일치(비어있음)", idx)
+                    return None
+                cleaned_text = str(text).replace("\n", " ").strip()
+                if not cleaned_text:
+                    logger.error("Refiner edits[%d].text 스키마 불일치(정리 후 비어있음)", idx)
+                    return None
+
+                out.append({"id": turn_id, "speaker": speaker, "text": cleaned_text})
+            return out
+
+        applied_scripts: List[ScriptTurn] | None = None
+        last_error: str | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            parsed: Any = None
+            try:
+                response = llm.invoke(messages, config={"timeout": timeout})
+                logger.info("Refiner 응답 수신")
+                parsed = _parse_json_from_response(response.content if isinstance(response, AIMessage) else str(response))
+            except Exception as exc:  # noqa: BLE001
+                # 모델 이름 오타/권한 문제는 설정 문제이므로, 자동으로 공통(또는 worker) 모델로 폴백해 계속 시도한다.
+                if _looks_like_model_not_found(exc):
+                    llm = _build_llm(profile="worker")
+                    logger.warning(
+                        "Refiner 모델 접근 불가로 폴백합니다: %s -> %s",
+                        os.getenv("THEME_REFINER_OPENAI_MODEL") or os.getenv("OPENAI_MODEL"),
+                        os.getenv("THEME_WORKER_OPENAI_MODEL") or os.getenv("OPENAI_MODEL"),
+                    )
+                    last_error = f"refiner_model_not_found: {exc}"
+                    continue
+                logger.warning("Refiner 호출 실패(타임아웃/네트워크 등): %s", exc)
+                last_error = f"refiner_invoke_failed: {exc}"
+                break
+
+            edits = _parse_edits(parsed)
+            if edits is None:
+                last_error = "refiner_parse_failed: missing_or_invalid_edits"
+                logger.error("Refiner 출력 파싱/스키마 불일치(edits). attempt=%d/%d", attempt, max_attempts)
+                if attempt < max_attempts:
+                    continue
+                break
+
+            validated = _validate_edits(edits, scripts_len=len(scripts))
+            if validated is None:
+                last_error = "refiner_parse_failed: edits_schema_invalid"
+                logger.error("Refiner 출력 파싱/스키마 불일치(edits[*]). attempt=%d/%d", attempt, max_attempts)
+                if attempt < max_attempts:
+                    continue
+                break
+
+            # patch 적용
+            if not validated:
+                applied_scripts = list(scripts)
+                logger.info("Refiner edits 없음: 변경 없이 유지합니다.")
+            else:
+                id_to_index: Dict[int, int] = {}
+                for i, turn in enumerate(scripts):
+                    if isinstance(turn, dict) and isinstance(turn.get("id"), int):
+                        id_to_index[int(turn["id"])] = i
+
+                patched: List[Dict[str, Any]] = [dict(t) for t in scripts]
+                apply_failed = False
+                for edit in validated:
+                    turn_id = int(edit["id"])
+                    target_idx = id_to_index.get(turn_id)
+                    if target_idx is None:
+                        last_error = f"refiner_apply_failed: missing_turn_id={turn_id}"
+                        logger.error("Refiner edits 적용 실패: scripts에 없는 id=%d", turn_id)
+                        apply_failed = True
+                        break
+                    patched_turn = dict(patched[target_idx])
+                    patched_turn["speaker"] = edit["speaker"]
+                    patched_turn["text"] = edit["text"]
+                    patched[target_idx] = patched_turn
+
+                if apply_failed:
+                    logger.error("Refiner 출력 적용 실패. attempt=%d/%d", attempt, max_attempts)
+                    if attempt < max_attempts:
+                        continue
+                    break
+
+                applied_scripts = patched  # type: ignore[assignment]
+                logger.info("Refiner edits 적용: %d턴", len(validated))
+
+            break
+
+        if applied_scripts is None:
+            logger.error(
+                "Refiner 결과를 적용하지 못해 merge 결과를 그대로 사용합니다. (reason=%s)",
+                last_error or "unknown",
+            )
+            applied_scripts = list(scripts)
 
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT_PATH.write_text(json.dumps(refined_scripts, ensure_ascii=False, indent=2), encoding="utf-8")
+        OUTPUT_PATH.write_text(json.dumps(applied_scripts, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        return {**state, "scripts": refined_scripts}
+        return {**state, "scripts": applied_scripts}
 
     graph.add_node("prefetch_cache", prefetch_cache)
     graph.add_node("run_theme_workers", run_theme_workers)

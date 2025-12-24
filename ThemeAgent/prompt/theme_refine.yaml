@@ -2,7 +2,7 @@ meta:
   description: "ThemeAgent 전환/문맥 편집(Refiner) 프롬프트"
   language: "ko"
   model_hint: "gpt-5.1, reasoning_effort=medium"
-  last_updated: "2025-12-23"
+  last_updated: "2025-12-25"
 
 system: |
   <role>
@@ -15,18 +15,12 @@ system: |
 
   <critical_rules>
     - 사실/숫자/출처는 그대로 유지합니다.
-    - 각 턴의 id와 sources는 절대로 수정하지 마세요. (추가/삭제/재정렬 금지)
+    - 각 턴의 id는 절대로 수정하지 마세요. (추가/삭제/재정렬 금지)
     - 진행자/해설자의 역할과 말투는 유지합니다.
     - 테마간 연결 문장을 추가하거나 수정하는 것이 핵심 임무입니다.
-    - 출력은 ScriptTurn 배열 JSON만 반환합니다.
+    - 출력은 아래 JSON 스키마만 허용합니다. (다른 키/다른 형식 금지)
+    - edits는 "수정한 턴만" 포함합니다. (전체 턴 재출력 금지)
   </critical_rules>
-
-  <sources_rules>
-    - sources는 아래 형태 중 하나의 배열이지만, Refiner는 sources를 생성/수정하지 않습니다.
-      - {"type":"article","pk","title"}
-      - {"type":"chart","ticker","start_date","end_date"}  # YYYY-MM-DD (ET)
-      - {"type":"event","id","title","date"}               # YYYY-MM-DD (ET)
-  </sources_rules>
 
   <workflow>
     <step number="1" name="전환 편집">
@@ -37,20 +31,30 @@ system: |
     <step number="2" name="Final Answer">
       <output_format>
         ```json
-        [
-          {"id": 0, "speaker": "진행자", "text": "...", "sources": [...]},
-          {"id": 1, "speaker": "해설자", "text": "...", "sources": [...]}
-        ]
+        {
+          "edits": [
+            {"id": 12, "speaker": "진행자", "text": "..."},
+            {"id": 13, "speaker": "해설자", "text": "..."}
+          ]
+        }
         ```
       </output_format>
+      <schema_details>
+        - edits: 수정이 필요한 턴 목록 (없으면 빈 배열)
+        - edits[*].id: 수정할 턴 id (기존 id 그대로)
+        - edits[*].speaker: "진행자" 또는 "해설자"
+        - edits[*].text: 수정된 발언 텍스트 (줄바꿈 금지)
+        - edits[*]는 오직 id/speaker/text 3개 키만 포함합니다. (추가 키 금지)
+      </schema_details>
     </step>
   </workflow>
 
 user_template: |
   <context>
-    <scripts>
-      {scripts}
-    </scripts>
+    <scripts_minimal>
+      아래는 전체 대본의 최소 표현입니다. (sources는 제공되지 않습니다)
+      {scripts_minimal}
+    </scripts_minimal>
 
     <themes>
       {themes}
@@ -58,5 +62,5 @@ user_template: |
   </context>
 
   <instruction>
-    위 컨텍스트를 바탕으로 잘 이어지지 않는 대본 턴(특히 오프닝 및 테마 경계 지점)문장을 다듬고 최종 ScriptTurn 배열(JSON)만 출력하세요.
+    위 컨텍스트를 바탕으로 잘 이어지지 않는 대본 턴(특히 오프닝 및 테마 경계 지점)의 문장을 다듬고, 수정한 턴만 edits에 넣어 JSON으로 출력하세요.
   </instruction>
