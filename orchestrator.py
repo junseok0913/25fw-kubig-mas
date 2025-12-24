@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -272,6 +273,16 @@ def main() -> None:
         "date": date_yyyymmdd,
         "user_tickers": [],
     })
+
+    # 최종 산출물 저장: date/user_tickers/scripts만 (프로젝트 루트에 날짜를 파일명으로)
+    final_payload = {
+        "date": result.get("date", date_yyyymmdd),
+        "user_tickers": result.get("user_tickers", []),
+        "scripts": result.get("scripts", []),
+    }
+    out_path = ROOT / f"{date_yyyymmdd}.json"
+    out_path.write_text(json.dumps(final_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n=== Saved Final Output ===\n{out_path}")
     
     print("\n=== Orchestrator Result ===")
     print("nutshell:", result.get("nutshell"))

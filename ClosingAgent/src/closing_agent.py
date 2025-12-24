@@ -263,8 +263,6 @@ def extract_closing_turns_node(state: ClosingState) -> ClosingState:
 
     if not cleaned:
         logger.warning("closing_turns를 추출하지 못했습니다. (모델 응답 확인 필요)")
-    elif not (3 <= len(cleaned) <= 6):
-        logger.warning("closing_turns가 3~6턴 범위를 벗어납니다: %d턴", len(cleaned))
 
     return {**state, "closing_turns": cleaned}
 
@@ -281,6 +279,15 @@ def append_scripts_node(state: ClosingState) -> ClosingState:
     return {**state, "scripts": scripts}
 
 
+def cleanup_node(state: ClosingState) -> ClosingState:
+    """prefetch로 생성된 캐시 파일을 정리한다."""
+    try:
+        cleanup_cache()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("캐시 정리 실패(치명적이지 않음): %s", exc)
+    return state
+
+
 def build_graph():
     _load_env()
     graph = StateGraph(ClosingState)
@@ -292,6 +299,7 @@ def build_graph():
     graph.add_node("tools", ToolNode(TOOLS))
     graph.add_node("extract_closing_turns", extract_closing_turns_node)
     graph.add_node("append_scripts", append_scripts_node)
+    graph.add_node("cleanup_cache", cleanup_node)
 
     graph.add_edge(START, "prefetch_calendar")
     graph.add_edge("prefetch_calendar", "load_context")
@@ -308,7 +316,8 @@ def build_graph():
     )
     graph.add_edge("tools", "agent")
     graph.add_edge("extract_closing_turns", "append_scripts")
-    graph.add_edge("append_scripts", END)
+    graph.add_edge("append_scripts", "cleanup_cache")
+    graph.add_edge("cleanup_cache", END)
 
     graph.set_entry_point("prefetch_calendar")
     return graph.compile()
@@ -347,4 +356,3 @@ if __name__ == "__main__":  # pragma: no cover
     print("scripts len:", len(result.get("scripts", [])))
     print("closing_turns len:", len(result.get("closing_turns", [])))
     print("output:", OUTPUT_PATH)
-
