@@ -29,6 +29,7 @@ class Theme(TypedDict):
     related_news: list[dict]  # {"pk", "title", ...}
 
 class ScriptTurn(TypedDict):
+    id: int
     speaker: str              # "진행자" | "해설자"
     text: str
     sources: list[dict]       # {"pk", "title", ...}
@@ -181,8 +182,8 @@ class ThemeState(TypedDict, total=False):
     ```json
     {
       "scripts": [
-        {"speaker": "진행자", "text": "...", "sources": [...]},
-        {"speaker": "해설자", "text": "...", "sources": [...]}
+        {"id": 0, "speaker": "진행자", "text": "...", "sources": [...]},
+        {"id": 1, "speaker": "해설자", "text": "...", "sources": [...]}
       ]
     }
     ```
@@ -293,11 +294,13 @@ class ThemeWorkerState(TypedDict, total=False):
     {
       "scripts": [
         {
+          "id": 0,
           "speaker": "진행자",
           "text": "...",
           "sources": [{"pk": "...", "title": "..."}]
         },
         {
+          "id": 1,
           "speaker": "해설자",
           "text": "...",
           "sources": [{"pk": "...", "title": "..."}]

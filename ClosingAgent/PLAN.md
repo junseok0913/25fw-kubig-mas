@@ -23,6 +23,7 @@
 
 ```python
 class ScriptTurn(TypedDict):
+    id: int
     speaker: str                 # "진행자" | "해설자"
     text: str
     sources: list[dict]          # 최소 { "pk": str, "title": str } 권장

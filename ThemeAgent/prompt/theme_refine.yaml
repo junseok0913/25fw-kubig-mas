@@ -30,8 +30,8 @@ system: |
   <output_format>
   ```json
   [
-    {"speaker": "진행자", "text": "...", "sources": [...]},
-    {"speaker": "해설자", "text": "...", "sources": [...]}
+    {"id": 0, "speaker": "진행자", "text": "...", "sources": [...]},
+    {"id": 1, "speaker": "해설자", "text": "...", "sources": [...]}
   ]
   ```
   </output_format>

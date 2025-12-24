@@ -153,6 +153,7 @@ class Theme(TypedDict):
 
 class ScriptTurn(TypedDict):
     """진행자/해설자 한 턴의 발언."""
+    id: int
     speaker: Literal["진행자", "해설자"]
     text: str
     sources: List[NewsSource]
@@ -404,6 +405,23 @@ def _parse_json_from_response(content: str) -> Dict[str, Any]:
         return {}
 
 
+def _assign_script_ids(scripts: Any) -> List[Dict[str, Any]]:
+    """scripts 배열의 각 턴에 0부터 증가하는 id를 부여한다.
+
+    LLM이 id를 포함해 반환하더라도 최종적으로는 순서 기반으로 다시 부여한다.
+    """
+    if not isinstance(scripts, list):
+        return []
+    out: List[Dict[str, Any]] = []
+    for idx, turn in enumerate(scripts):
+        if not isinstance(turn, dict):
+            continue
+        row = dict(turn)
+        row["id"] = idx
+        out.append(row)
+    return out
+
+
 def extract_script_node(state: OpeningState) -> OpeningState:
     """최종 메시지에서 구조화된 대본을 추출하고 JSON 파일로 저장한다.
     
@@ -424,7 +442,7 @@ def extract_script_node(state: OpeningState) -> OpeningState:
     
     themes = parsed.get("themes", [])
     nutshell = parsed.get("nutshell", "")
-    scripts = parsed.get("scripts", [])
+    scripts = _assign_script_ids(parsed.get("scripts", []))
     
     # 결과 구성
     result = {"themes": themes, "nutshell": nutshell, "scripts": scripts}

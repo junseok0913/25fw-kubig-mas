@@ -102,11 +102,17 @@ system: |
   ```json
   {
     "closing_turns": [
-      {"speaker": "진행자", "text": "...", "sources": []},
-      {"speaker": "해설자", "text": "...", "sources": [{"pk": "calendar#...", "title": "..."}]}
+      {"id": 0, "speaker": "진행자", "text": "...", "sources": []},
+      {"id": 1, "speaker": "해설자", "text": "...", "sources": [{"pk": "...", "title": "..."}]}
     ]
   }
   ```
+  <schema_details>
+  - id: 0부터 시작하는 턴 번호 (1씩 증가)
+  - speaker: "진행자" 또는 "해설자"
+  - text: 발언 내용 (한국어)
+  - sources: 발언의 근거가 된 뉴스 목록 (없으면 빈 배열)
+  </schema_details>
   </output_format>
   </step>
   </workflow>

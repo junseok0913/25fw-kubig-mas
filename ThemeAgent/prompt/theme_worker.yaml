@@ -138,8 +138,8 @@ system: |
   ```json
   {
     "scripts": [
-      {"speaker": "진행자", "text": "...", "sources": [{"pk": "...", "title": "..."}]},
-      {"speaker": "해설자", "text": "...", "sources": [{"pk": "...", "title": "..."}]}
+      {"id": 0, "speaker": "진행자", "text": "...", "sources": [{"pk": "...", "title": "..."}]},
+      {"id": 1, "speaker": "해설자", "text": "...", "sources": [{"pk": "...", "title": "..."}]}
     ]
   }
   ```

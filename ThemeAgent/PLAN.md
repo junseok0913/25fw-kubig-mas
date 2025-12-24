@@ -19,6 +19,7 @@
       related_news: list[dict]  # {"pk", "title", ...}
 
   class ScriptTurn(TypedDict):
+      id: int
       speaker: str              # "진행자" | "해설자"
       text: str
       sources: list[dict]       # {"pk", "title", ...}
@@ -176,6 +177,7 @@ class Theme(TypedDict):
     related_news: List[NewsSource]
 
 class ScriptTurn(TypedDict):
+    id: int
     speaker: Literal["진행자", "해설자"]
     text: str
     sources: List[NewsSource]
@@ -310,7 +312,7 @@ flowchart TD
     ```json
     {
       "scripts": [
-        {"speaker": "진행자", "text": "...", "sources": [...]},
+        {"id": 0, "speaker": "진행자", "text": "...", "sources": [...]},
         ...
       ]
     }

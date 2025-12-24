@@ -110,6 +110,23 @@ def _parse_json_from_response(content: str) -> Dict[str, Any]:
         return {}
 
 
+def _assign_script_ids(scripts: Any) -> List[Dict[str, Any]]:
+    """scripts 배열의 각 턴에 0부터 증가하는 id를 부여한다.
+
+    LLM이 id를 포함해 반환하더라도 최종적으로는 순서 기반으로 다시 부여한다.
+    """
+    if not isinstance(scripts, list):
+        return []
+    out: List[Dict[str, Any]] = []
+    for idx, turn in enumerate(scripts):
+        if not isinstance(turn, dict):
+            continue
+        row = dict(turn)
+        row["id"] = idx
+        out.append(row)
+    return out
+
+
 def _load_prompt() -> Dict[str, str]:
     if not PROMPT_PATH.exists():
         raise FileNotFoundError(f"프롬프트 파일이 없습니다: {PROMPT_PATH}")
@@ -151,6 +168,7 @@ class NewsSource(TypedDict):
 
 
 class ScriptTurn(TypedDict):
+    id: int
     speaker: Literal["진행자", "해설자"]
     text: str
     sources: List[NewsSource]
@@ -264,13 +282,15 @@ def extract_closing_turns_node(state: ClosingState) -> ClosingState:
     if not cleaned:
         logger.warning("closing_turns를 추출하지 못했습니다. (모델 응답 확인 필요)")
 
-    return {**state, "closing_turns": cleaned}
+    return {**state, "closing_turns": _assign_script_ids(cleaned)}
 
 
 def append_scripts_node(state: ClosingState) -> ClosingState:
     scripts = list(state.get("scripts", []))
     closing_turns = state.get("closing_turns", [])
     scripts.extend(closing_turns)
+
+    scripts = _assign_script_ids(scripts)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(scripts, ensure_ascii=False, indent=2), encoding="utf-8")

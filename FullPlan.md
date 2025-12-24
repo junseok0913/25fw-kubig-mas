@@ -61,6 +61,7 @@ class Theme(TypedDict):
     related_news: list[dict]  # [{"pk": str, "title": str}, ...]
 
 class ScriptTurn(TypedDict):
+    id: int
     speaker: str              # "진행자" | "해설자"
     text: str
     sources: list[dict]       # [{"pk": str, "title": str}, ...]

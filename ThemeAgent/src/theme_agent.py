@@ -144,6 +144,23 @@ def _parse_json_from_response(content: str) -> Dict[str, Any]:
         return {}
 
 
+def _assign_script_ids(scripts: Any) -> List[Dict[str, Any]]:
+    """scripts 배열의 각 턴에 0부터 증가하는 id를 부여한다.
+
+    LLM이 id를 포함해 반환하더라도 최종적으로는 순서 기반으로 다시 부여한다.
+    """
+    if not isinstance(scripts, list):
+        return []
+    out: List[Dict[str, Any]] = []
+    for idx, turn in enumerate(scripts):
+        if not isinstance(turn, dict):
+            continue
+        row = dict(turn)
+        row["id"] = idx
+        out.append(row)
+    return out
+
+
 def _load_prompt() -> Dict[str, str]:
     """worker/refiner 프롬프트 파일을 로드한다."""
     if not WORKER_PROMPT_PATH.exists():
@@ -203,6 +220,7 @@ class Theme(TypedDict):
 
 
 class ScriptTurn(TypedDict):
+    id: int
     speaker: Literal["진행자", "해설자"]
     text: str
     sources: List[NewsSource]
@@ -305,7 +323,7 @@ def extract_theme_scripts_node(state: ThemeWorkerState) -> ThemeWorkerState:
             break
 
     parsed = _parse_json_from_response(raw_content)
-    scripts = parsed.get("scripts", [])
+    scripts = _assign_script_ids(parsed.get("scripts", []))
     return {**state, "scripts": scripts}
 
 
@@ -482,6 +500,8 @@ def build_theme_graph():
             refined_scripts = state.get("scripts", [])
         else:
             logger.info("Refiner 결과 수신: %d턴", len(refined_scripts))
+
+        refined_scripts = _assign_script_ids(refined_scripts)
 
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_PATH.write_text(json.dumps(refined_scripts, ensure_ascii=False, indent=2), encoding="utf-8")
