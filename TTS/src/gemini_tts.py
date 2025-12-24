@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import io
 import json
 import logging
 import os
@@ -38,6 +39,11 @@ class ScriptTurn(TypedDict):
     speaker: str
     text: str
     sources: List[Dict[str, Any]]
+
+class ChapterRange(TypedDict):
+    name: str
+    start_id: int
+    end_id: int
 
 
 def parse_date_arg(date_str: str) -> str:
@@ -84,6 +90,99 @@ def build_conversation_prompt(scripts: List[ScriptTurn]) -> str:
             continue
         lines.append(f"{label}: {text}")
     return "\n".join(lines).strip() + "\n"
+
+def _extract_pcm(audio_bytes: bytes) -> bytes:
+    """Gemini 응답을 PCM(s16le)로 정규화한다.
+
+    - WAV면 헤더를 제거하고 frames만 반환
+    - 아니면 이미 PCM이라고 가정
+    """
+    if _is_wav(audio_bytes):
+        with wave.open(io.BytesIO(audio_bytes), "rb") as wf:
+            channels = wf.getnchannels()
+            sampwidth = wf.getsampwidth()
+            fr = wf.getframerate()
+            if channels != CHANNELS or sampwidth != SAMPLE_WIDTH_BYTES or fr != SAMPLE_RATE_HZ:
+                raise ValueError(
+                    "예상치 못한 WAV 포맷입니다: "
+                    f"channels={channels}, sampwidth={sampwidth}, fr={fr} "
+                    f"(expected channels={CHANNELS}, sampwidth={SAMPLE_WIDTH_BYTES}, fr={SAMPLE_RATE_HZ})"
+                )
+            return wf.readframes(wf.getnframes())
+    return audio_bytes
+
+
+def _parse_int(value: Any) -> Optional[int]:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+        try:
+            return int(value.strip())
+        except ValueError:
+            return None
+    return None
+
+
+def _split_scripts_by_chapter(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """script.json을 chapter 기준으로 분할한다.
+
+    반환: [{"name": str, "start_id": int, "end_id": int, "scripts": List[ScriptTurn]}]
+    """
+    scripts = data.get("scripts")
+    if not isinstance(scripts, list):
+        raise ValueError("script.json에 'scripts' 배열이 없습니다.")
+
+    chapter = data.get("chapter")
+    if not isinstance(chapter, list):
+        # 하위 호환: chapter가 없으면 전체를 1개 chunk로 처리
+        return [{"name": "all", "start_id": 0, "end_id": len(scripts) - 1, "scripts": scripts}]
+
+    ranges: Dict[str, ChapterRange] = {}
+    for item in chapter:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        start_id = _parse_int(item.get("start_id"))
+        end_id = _parse_int(item.get("end_id"))
+        if start_id is None or end_id is None:
+            continue
+        ranges[name.strip()] = {"name": name.strip(), "start_id": start_id, "end_id": end_id}
+
+    chunks: List[Dict[str, Any]] = []
+    for name in ("opening", "theme", "closing"):
+        r = ranges.get(name)
+        if not r:
+            continue
+        start_id = int(r["start_id"])
+        end_id = int(r["end_id"])
+        if start_id < 0 or end_id < 0 or end_id < start_id:
+            logger.info("Skip chapter %s: empty range (%d-%d)", name, start_id, end_id)
+            continue
+        selected: List[ScriptTurn] = []
+        for turn in scripts:
+            if not isinstance(turn, dict):
+                continue
+            tid = _parse_int(turn.get("id"))
+            if tid is None:
+                continue
+            if start_id <= tid <= end_id:
+                selected.append(turn)  # type: ignore[arg-type]
+        selected.sort(key=lambda t: int(t.get("id", 0)))  # type: ignore[arg-type]
+        if not selected:
+            logger.warning("Chapter %s 범위에 해당하는 turns가 없습니다: %d-%d", name, start_id, end_id)
+            continue
+        chunks.append({"name": name, "start_id": start_id, "end_id": end_id, "scripts": selected})
+
+    if chunks:
+        return chunks
+
+    # chapter는 있었지만 유효한 chunk를 만들지 못한 경우: 전체로 폴백
+    logger.warning("chapter 기반 분할 실패: 전체 scripts로 폴백합니다.")
+    return [{"name": "all", "start_id": 0, "end_id": len(scripts) - 1, "scripts": scripts}]
 
 
 def load_script_json(path: Path) -> Dict[str, Any]:
@@ -209,25 +308,69 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     try:
         data = load_script_json(script_path)
-        scripts: List[ScriptTurn] = data["scripts"]
-        prompt = build_conversation_prompt(scripts)
+        chunks = _split_scripts_by_chapter(data)
     except Exception as e:
         logger.error("입력 준비 실패: %s", e)
         return 1
 
+    prompts: List[Dict[str, Any]] = []
+    for chunk in chunks:
+        chunk_scripts: List[ScriptTurn] = chunk["scripts"]
+        prompt = build_conversation_prompt(chunk_scripts)
+        prompts.append({**chunk, "prompt": prompt})
+
     try:
-        audio_bytes = gemini_generate_tts(prompt, api_key=api_key, timeout_s=120.0)
+        audio_segments: List[Dict[str, Any]] = []
+        for p in prompts:
+            name = p["name"]
+            start_id = p["start_id"]
+            end_id = p["end_id"]
+            logger.info("Gemini TTS 요청: chapter=%s, id=%s-%s, turns=%d", name, start_id, end_id, len(p["scripts"]))
+            try:
+                audio_bytes = gemini_generate_tts(p["prompt"], api_key=api_key, timeout_s=120.0)
+            except Exception:
+                logger.error("Gemini TTS 실패: chapter=%s, id=%s-%s", name, start_id, end_id)
+                raise
+            audio_segments.append({**p, "audio_bytes": audio_bytes})
     except Exception:
         logger.error("TTS 생성 실패. 길이 제한/네트워크/권한 등을 확인하세요.")
         return 1
 
-    out_dir.mkdir(parents=True, exist_ok=False)
-    (out_dir / "prompt.txt").write_text(prompt, encoding="utf-8")
+    # WAV/PCM 포맷 검증 및 결합 PCM 준비 (디렉터리 생성 전 선검증)
+    combined_pcm_parts: List[bytes] = []
+    try:
+        for seg in audio_segments:
+            combined_pcm_parts.append(_extract_pcm(seg["audio_bytes"]))
+    except Exception as e:
+        logger.error("오디오 포맷 처리 실패: %s", e)
+        return 1
 
-    if _is_wav(audio_bytes):
-        out_wav.write_bytes(audio_bytes)
-    else:
-        _write_wav(out_wav, audio_bytes)
+    out_dir.mkdir(parents=True, exist_ok=False)
+    prompt_index: List[Dict[str, Any]] = []
+    for seg in audio_segments:
+        name = str(seg["name"])
+        (out_dir / f"prompt_{name}.txt").write_text(str(seg["prompt"]), encoding="utf-8")
+
+        # 디버깅용: 챕터별 wav도 저장
+        chapter_wav = out_dir / f"{name}.wav"
+        if _is_wav(seg["audio_bytes"]):
+            chapter_wav.write_bytes(seg["audio_bytes"])
+        else:
+            _write_wav(chapter_wav, seg["audio_bytes"])
+
+        prompt_index.append(
+            {
+                "name": name,
+                "start_id": seg.get("start_id"),
+                "end_id": seg.get("end_id"),
+                "turns": len(seg.get("scripts", [])),
+            }
+        )
+
+    (out_dir / "segments.json").write_text(json.dumps(prompt_index, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    combined_pcm = b"".join(combined_pcm_parts)
+    _write_wav(out_wav, combined_pcm)
 
     logger.info("Saved: %s", out_wav)
     return 0
