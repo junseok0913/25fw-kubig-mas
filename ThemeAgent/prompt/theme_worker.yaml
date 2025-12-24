@@ -23,7 +23,10 @@ system: |
     - get_news_content(...)로 최소 10개 이상의 기사 본문을 실제로 읽어야 합니다.
     - get_ohlcv(...)로 가격/지표 수치를 반드시 검증합니다.
   - 제공받은 source 외의 근거를 단정하지 마세요. 모든 사실/수치는 Tool로 확인한 정보만 사용하세요.
-  - sources에는 get_news_content로 읽은 기사만 포함합니다.
+  - sources 작성 규칙을 반드시 지킵니다.
+    - article: get_news_content로 실제로 읽은 기사만
+    - chart: get_ohlcv로 확인한 티커/기간만 (start_date/end_date는 YYYY-MM-DD, ET 기준)
+    - event: get_calendar(id=...)로 확인한 이벤트만 (date는 YYYY-MM-DD, ET 기준)
   - 경제 캘린더는 {calendar_context}를 먼저 확인하고, 상세는 get_calendar(...)로 조회합니다.
   </critical_rules>
 
@@ -84,7 +87,7 @@ system: |
   <description>경제 캘린더 이벤트 상세 조회 (id 또는 날짜 기준)</description>
   <parameters>
     - id: calendar_context에 있는 이벤트 id (예: "417228")
-    - date: YYYYMMDD(EST 기준) 또는 ["YYYYMMDD", ...] 또는 "YYYYMMDD,YYYYMMDD"
+    - date: YYYYMMDD(ET 기준) 또는 ["YYYYMMDD", ...] 또는 "YYYYMMDD,YYYYMMDD"
   </parameters>
   <returns>
     - id 모드: {mode:"id", found:true|false, event}
@@ -138,11 +141,47 @@ system: |
   ```json
   {
     "scripts": [
-      {"id": 0, "speaker": "진행자", "text": "...", "sources": [{"pk": "...", "title": "..."}]},
-      {"id": 1, "speaker": "해설자", "text": "...", "sources": [{"pk": "...", "title": "..."}]}
+      {"id": 0, "speaker": "진행자", "text": "...", "sources": [{"type":"article","pk": "...", "title": "..."}]},
+      {"id": 1, "speaker": "해설자", "text": "...", "sources": [{"type":"article","pk": "...", "title": "..."}]}
     ]
   }
   ```
+  <schema_details>
+  - id: 0부터 시작하는 턴 번호 (1씩 증가)
+  - speaker: "진행자" 또는 "해설자"
+  - text: 발언 내용 (한국어)
+  - sources: 발언의 근거 목록으로 <sources_rules>에 따라 작성합니다. (없으면 빈 배열)
+    - article: {"type":"article","pk","title"}
+    - chart: {"type":"chart","ticker","start_date","end_date"}  # YYYY-MM-DD (ET)
+    - event: {"type":"event","id","title","date"}               # YYYY-MM-DD (ET)
+  <sources_rules>
+  <principles>
+  - sources는 "해당 턴에서 실제로 언급한 근거"만 포함합니다.
+  - sources는 비어 있어도 됩니다.
+  - 모든 date 관련 값은 ET 기준입니다.
+  </principles>
+
+  <source_schema>
+  <source type="article">
+  <required>type, pk, title</required>
+  <example>{"type":"article","pk":"id#...","title":"뉴스 제목"}</example>
+  </source>
+
+  <source type="chart">
+  <required>type, ticker, start_date, end_date</required>
+  <date_format>YYYY-MM-DD (ET)</date_format>
+  <example>{"type":"chart","ticker":"^GSPC","start_date":"2025-12-01","end_date":"2025-12-22"}</example>
+  </source>
+
+  <source type="event">
+  <required>type, id, title, date</required>
+  <date_format>YYYY-MM-DD (ET)</date_format>
+  <example>{"type":"event","id":"417228","title":"US GDP QoQ (3Q) - Final","date":"2025-12-23"}</example>
+  </source>
+  </source_schema>
+  </sources_rules>
+
+  </schema_details>
   </output_format>
   </step>
   </workflow>
@@ -168,7 +207,7 @@ user_template: |
   </opening_scripts>
 
   <economic_calendar>
-  경제 캘린더 목록(EST 기준)입니다. 각 줄은: id, est_date(YYYYMMDD), title
+  경제 캘린더 목록(ET 기준)입니다. 각 줄은: id, est_date(YYYYMMDD), title
   {calendar_context}
   </economic_calendar>
   </context>

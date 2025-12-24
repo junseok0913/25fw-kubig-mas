@@ -18,7 +18,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, Literal, TypedDict, Union
 
 from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
@@ -79,7 +79,35 @@ class ScriptTurn(TypedDict):
     id: int
     speaker: str  # "진행자" | "해설자"
     text: str
-    sources: List[Dict[str, Any]]
+
+    # sources: 발언의 근거 목록 (ET 기준)
+    # - article: {"type":"article","pk","title"}
+    # - chart: {"type":"chart","ticker","start_date","end_date"}  # YYYY-MM-DD
+    # - event: {"type":"event","id","title","date"}               # YYYY-MM-DD
+    sources: List["Source"]
+
+
+class ArticleSource(TypedDict):
+    type: Literal["article"]
+    pk: str
+    title: str
+
+
+class ChartSource(TypedDict):
+    type: Literal["chart"]
+    ticker: str
+    start_date: str  # YYYY-MM-DD (ET)
+    end_date: str  # YYYY-MM-DD (ET)
+
+
+class EventSource(TypedDict):
+    type: Literal["event"]
+    id: str  # calendar event id
+    title: str
+    date: str  # YYYY-MM-DD (ET)
+
+
+Source = Union[ArticleSource, ChartSource, EventSource]
 
 
 class BriefingState(TypedDict, total=False):

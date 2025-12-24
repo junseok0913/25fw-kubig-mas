@@ -15,10 +15,18 @@ system: |
 
   <critical_rules>
   - 사실/숫자/출처는 그대로 유지합니다.
+  - 각 턴의 id와 sources는 절대로 수정하지 마세요. (추가/삭제/재정렬 금지)
   - 진행자/해설자의 역할과 말투는 유지합니다.
   - 테마간 연결 문장을 추가하거나 수정하는 것이 핵심 임무입니다.
   - 출력은 ScriptTurn 배열 JSON만 반환합니다.
   </critical_rules>
+
+  <sources_rules>
+  - sources는 아래 형태 중 하나의 배열이지만, Refiner는 sources를 생성/수정하지 않습니다.
+    - {"type":"article","pk","title"}
+    - {"type":"chart","ticker","start_date","end_date"}  # YYYY-MM-DD (ET)
+    - {"type":"event","id","title","date"}               # YYYY-MM-DD (ET)
+  </sources_rules>
 
   <workflow>
   <step number="1" name="전환 편집">

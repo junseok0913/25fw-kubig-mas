@@ -109,21 +109,149 @@ def _parse_json_from_response(content: str) -> Dict[str, Any]:
         logger.error("JSON 파싱 실패: %s", exc)
         return {}
 
+_DATE_YYYY_MM_DD = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
-def _assign_script_ids(scripts: Any) -> List[Dict[str, Any]]:
-    """scripts 배열의 각 턴에 0부터 증가하는 id를 부여한다.
 
-    LLM이 id를 포함해 반환하더라도 최종적으로는 순서 기반으로 다시 부여한다.
+def _is_nonempty_str(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_valid_date_yyyy_mm_dd(value: Any) -> bool:
+    if not _is_nonempty_str(value):
+        return False
+    s = str(value).strip()
+    if not _DATE_YYYY_MM_DD.match(s):
+        return False
+    try:
+        datetime.strptime(s, "%Y-%m-%d")
+        return True
+    except Exception:
+        return False
+
+
+def _normalize_sources(raw_sources: Any, *, turn_index: int) -> List[Dict[str, Any]] | None:
+    """sources 배열을 스키마에 맞게 정규화한다.
+
+    - type이 없고 pk/title만 있으면 legacy article로 간주한다(경고 후 유지).
+    - 필수 필드 누락/형식 오류는 warning 로그 후 drop한다.
     """
-    if not isinstance(scripts, list):
-        return []
+    if not isinstance(raw_sources, list):
+        logger.warning("ScriptTurn[%d] drop: sources가 리스트가 아닙니다.", turn_index)
+        return None
+
     out: List[Dict[str, Any]] = []
-    for idx, turn in enumerate(scripts):
-        if not isinstance(turn, dict):
+    for src_index, src in enumerate(raw_sources):
+        if not isinstance(src, dict):
+            logger.warning("ScriptTurn[%d].sources[%d] drop: 객체가 아닙니다.", turn_index, src_index)
             continue
-        row = dict(turn)
-        row["id"] = idx
-        out.append(row)
+
+        src_type = src.get("type")
+        if not _is_nonempty_str(src_type):
+            if _is_nonempty_str(src.get("pk")) and _is_nonempty_str(src.get("title")):
+                logger.warning(
+                    "ScriptTurn[%d].sources[%d] missing type: legacy article로 처리합니다.",
+                    turn_index,
+                    src_index,
+                )
+                out.append({"type": "article", "pk": str(src["pk"]).strip(), "title": str(src["title"]).strip()})
+            else:
+                logger.warning("ScriptTurn[%d].sources[%d] drop: type 누락", turn_index, src_index)
+            continue
+
+        st = str(src_type).strip()
+        if st == "article":
+            if not _is_nonempty_str(src.get("pk")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: article.pk 누락", turn_index, src_index)
+                continue
+            if not _is_nonempty_str(src.get("title")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: article.title 누락", turn_index, src_index)
+                continue
+            out.append({"type": "article", "pk": str(src["pk"]).strip(), "title": str(src["title"]).strip()})
+            continue
+
+        if st == "chart":
+            if not _is_nonempty_str(src.get("ticker")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: chart.ticker 누락", turn_index, src_index)
+                continue
+            if not _is_valid_date_yyyy_mm_dd(src.get("start_date")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: chart.start_date 누락/형식 오류", turn_index, src_index)
+                continue
+            if not _is_valid_date_yyyy_mm_dd(src.get("end_date")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: chart.end_date 누락/형식 오류", turn_index, src_index)
+                continue
+            out.append(
+                {
+                    "type": "chart",
+                    "ticker": str(src["ticker"]).strip(),
+                    "start_date": str(src["start_date"]).strip(),
+                    "end_date": str(src["end_date"]).strip(),
+                }
+            )
+            continue
+
+        if st == "event":
+            if not _is_nonempty_str(src.get("id")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: event.id 누락", turn_index, src_index)
+                continue
+            if not _is_nonempty_str(src.get("title")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: event.title 누락", turn_index, src_index)
+                continue
+            if not _is_valid_date_yyyy_mm_dd(src.get("date")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: event.date 누락/형식 오류", turn_index, src_index)
+                continue
+            out.append(
+                {
+                    "type": "event",
+                    "id": str(src["id"]).strip(),
+                    "title": str(src["title"]).strip(),
+                    "date": str(src["date"]).strip(),
+                }
+            )
+            continue
+
+        logger.warning("ScriptTurn[%d].sources[%d] drop: 알 수 없는 type=%r", turn_index, src_index, st)
+
+    return out
+
+
+def _normalize_script_turns(raw_scripts: Any) -> List[Dict[str, Any]]:
+    """scripts 배열을 ScriptTurn 스키마에 맞게 정규화한다.
+
+    - speaker/text/sources 필수
+    - id는 0부터 순서대로 재부여
+    - sources 내부는 type 기반 스키마로 정규화
+    - 필드 누락/형식 오류는 warning 로그 후 drop
+    """
+    if not isinstance(raw_scripts, list):
+        logger.warning("scripts drop: 배열이 아닙니다.")
+        return []
+
+    out: List[Dict[str, Any]] = []
+    for idx, turn in enumerate(raw_scripts):
+        if not isinstance(turn, dict):
+            logger.warning("ScriptTurn[%d] drop: 객체가 아닙니다.", idx)
+            continue
+
+        speaker = turn.get("speaker")
+        if speaker not in {"진행자", "해설자"}:
+            logger.warning("ScriptTurn[%d] drop: speaker 누락/형식 오류", idx)
+            continue
+
+        text = turn.get("text")
+        if not _is_nonempty_str(text):
+            logger.warning("ScriptTurn[%d] drop: text 누락/형식 오류", idx)
+            continue
+
+        if "sources" not in turn:
+            logger.warning("ScriptTurn[%d] drop: sources 누락", idx)
+            continue
+
+        sources = _normalize_sources(turn.get("sources"), turn_index=idx)
+        if sources is None:
+            continue
+
+        out.append({"id": len(out), "speaker": speaker, "text": str(text).strip(), "sources": sources})
+
     return out
 
 
@@ -167,11 +295,34 @@ class NewsSource(TypedDict):
     title: str
 
 
+class ArticleSource(TypedDict):
+    type: Literal["article"]
+    pk: str
+    title: str
+
+
+class ChartSource(TypedDict):
+    type: Literal["chart"]
+    ticker: str
+    start_date: str  # YYYY-MM-DD (ET)
+    end_date: str  # YYYY-MM-DD (ET)
+
+
+class EventSource(TypedDict):
+    type: Literal["event"]
+    id: str  # calendar event id
+    title: str
+    date: str  # YYYY-MM-DD (ET)
+
+
+ScriptSource = ArticleSource | ChartSource | EventSource
+
+
 class ScriptTurn(TypedDict):
     id: int
     speaker: Literal["진행자", "해설자"]
     text: str
-    sources: List[NewsSource]
+    sources: List[ScriptSource]
 
 
 class ClosingState(TypedDict, total=False):
@@ -260,29 +411,11 @@ def extract_closing_turns_node(state: ClosingState) -> ClosingState:
             break
 
     parsed = _parse_json_from_response(raw_content)
-    closing_turns = parsed.get("closing_turns", [])
-    if not isinstance(closing_turns, list):
-        closing_turns = []
-
-    cleaned: List[ScriptTurn] = []
-    for t in closing_turns:
-        if not isinstance(t, dict):
-            continue
-        speaker = t.get("speaker")
-        text = t.get("text")
-        sources = t.get("sources", [])
-        if speaker not in {"진행자", "해설자"}:
-            continue
-        if not isinstance(text, str) or not text.strip():
-            continue
-        if not isinstance(sources, list):
-            sources = []
-        cleaned.append({"speaker": speaker, "text": text.strip(), "sources": sources})  # type: ignore[typeddict-item]
-
-    if not cleaned:
+    closing_turns = _normalize_script_turns(parsed.get("closing_turns", []))
+    if not closing_turns:
         logger.warning("closing_turns를 추출하지 못했습니다. (모델 응답 확인 필요)")
 
-    return {**state, "closing_turns": _assign_script_ids(cleaned)}
+    return {**state, "closing_turns": closing_turns}
 
 
 def append_scripts_node(state: ClosingState) -> ClosingState:
@@ -290,7 +423,7 @@ def append_scripts_node(state: ClosingState) -> ClosingState:
     closing_turns = state.get("closing_turns", [])
     scripts.extend(closing_turns)
 
-    scripts = _assign_script_ids(scripts)
+    scripts = _normalize_script_turns(scripts)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(scripts, ensure_ascii=False, indent=2), encoding="utf-8")
