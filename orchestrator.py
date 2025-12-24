@@ -109,6 +109,45 @@ class EventSource(TypedDict):
 
 Source = Union[ArticleSource, ChartSource, EventSource]
 
+ChapterName = Literal["opening", "theme", "closing"]
+
+
+class ChapterRange(TypedDict):
+    name: ChapterName
+    start_id: int
+    end_id: int
+
+
+def _empty_chapter(name: ChapterName) -> ChapterRange:
+    return {"name": name, "start_id": -1, "end_id": -1}
+
+
+def _init_chapter() -> List[ChapterRange]:
+    return [_empty_chapter("opening"), _empty_chapter("theme"), _empty_chapter("closing")]
+
+
+def _set_chapter_range(
+    chapter: List[ChapterRange],
+    name: ChapterName,
+    start_id: int,
+    end_id: int,
+) -> List[ChapterRange]:
+    # start/end가 유효하지 않으면 -1/-1로 통일
+    if start_id < 0 or end_id < 0 or end_id < start_id:
+        updated: ChapterRange = _empty_chapter(name)
+    else:
+        updated = {"name": name, "start_id": start_id, "end_id": end_id}
+
+    out = list(chapter) if isinstance(chapter, list) else _init_chapter()
+    for idx, item in enumerate(out):
+        if item.get("name") == name:
+            out[idx] = updated
+            return out
+
+    # 방어적 처리: name이 없으면 append
+    out.append(updated)
+    return out
+
 
 class BriefingState(TypedDict, total=False):
     # 날짜 (EST 기준, YYYYMMDD 형식)
@@ -126,6 +165,9 @@ class BriefingState(TypedDict, total=False):
 
     # Metadata
     current_section: str
+
+    # scripts[].id 기준 챕터 구간 (opening/theme/closing, inclusive)
+    chapter: List[ChapterRange]
 
 
 def opening_node(state: BriefingState) -> BriefingState:
@@ -154,12 +196,19 @@ def opening_node(state: BriefingState) -> BriefingState:
     scripts = list(state.get("scripts", []))
     scripts.extend(oa_result.get("scripts", []))
 
+    chapter = _init_chapter()
+    if scripts:
+        chapter = _set_chapter_range(chapter, "opening", 0, len(scripts) - 1)
+    else:
+        chapter = _set_chapter_range(chapter, "opening", -1, -1)
+
     return {
         **state,
         "nutshell": oa_result.get("nutshell", ""),
         "themes": themes,
         "scripts": scripts,
         "current_section": "theme",
+        "chapter": chapter,
     }
 
 
@@ -173,6 +222,8 @@ def theme_node(state: BriefingState) -> BriefingState:
 
     # BRIEFING_DATE 환경변수 설정 (Tool에서 사용)
     os.environ["BRIEFING_DATE"] = date_str
+
+    opening_len = len(state.get("scripts", []))
 
     ta_graph = theme_agent.build_theme_graph()
     result = ta_graph.invoke(
@@ -189,10 +240,23 @@ def theme_node(state: BriefingState) -> BriefingState:
     except Exception:
         pass
 
+    scripts = result.get("scripts", [])
+    total_len = len(scripts) if isinstance(scripts, list) else 0
+
+    chapter = state.get("chapter")
+    if not isinstance(chapter, list):
+        chapter = _init_chapter()
+    chapter = _set_chapter_range(chapter, "opening", 0, opening_len - 1 if opening_len > 0 else -1)
+    if total_len > opening_len:
+        chapter = _set_chapter_range(chapter, "theme", opening_len, total_len - 1)
+    else:
+        chapter = _set_chapter_range(chapter, "theme", -1, -1)
+
     return {
         **state,
-        "scripts": result.get("scripts", []),
+        "scripts": scripts if isinstance(scripts, list) else [],
         "current_section": "closing",
+        "chapter": chapter,
     }
 
 
@@ -205,6 +269,8 @@ def closing_node(state: BriefingState) -> BriefingState:
         raise ValueError("date 필드가 state에 없습니다. orchestrator 실행 시 날짜를 지정하세요.")
 
     os.environ["BRIEFING_DATE"] = date_str
+
+    pre_len = len(state.get("scripts", []))
 
     ca_graph = closing_agent.build_graph()
     result = ca_graph.invoke(
@@ -219,10 +285,24 @@ def closing_node(state: BriefingState) -> BriefingState:
     except Exception:
         pass
 
+    scripts = result.get("scripts", [])
+    total_len = len(scripts) if isinstance(scripts, list) else 0
+
+    chapter = state.get("chapter")
+    if not isinstance(chapter, list):
+        chapter = _init_chapter()
+
+    # closing은 항상 마지막에 append된다고 가정하고 길이로 범위 계산
+    if total_len > pre_len:
+        chapter = _set_chapter_range(chapter, "closing", pre_len, total_len - 1)
+    else:
+        chapter = _set_chapter_range(chapter, "closing", -1, -1)
+
     return {
         **state,
-        "scripts": result.get("scripts", []),
+        "scripts": scripts if isinstance(scripts, list) else [],
         "current_section": "closing",
+        "chapter": chapter,
     }
 
 
@@ -303,15 +383,22 @@ def main() -> None:
         "user_tickers": [],
     })
 
-    # 최종 산출물 저장: date/user_tickers/scripts만 (프로젝트 루트에 날짜를 파일명으로)
+    # 최종 산출물 저장: date/user_tickers/chapter/scripts
     final_payload = {
         "date": result.get("date", date_yyyymmdd),
         "user_tickers": result.get("user_tickers", []),
+        "chapter": result.get("chapter", _init_chapter()),
         "scripts": result.get("scripts", []),
     }
-    out_path = ROOT / f"{date_yyyymmdd}.json"
-    out_path.write_text(json.dumps(final_payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n=== Saved Final Output ===\n{out_path}")
+    final_json = json.dumps(final_payload, ensure_ascii=False, indent=2)
+
+    # Podcast/{date}/script.json (TTS 파이프라인 입력)
+    podcast_dir = ROOT / "Podcast" / date_yyyymmdd
+    podcast_dir.mkdir(parents=True, exist_ok=True)
+    podcast_script_path = podcast_dir / "script.json"
+    podcast_script_path.write_text(final_json, encoding="utf-8")
+
+    print(f"\n=== Saved Final Output ===\n- {podcast_script_path}")
     
     print("\n=== Orchestrator Result ===")
     print("nutshell:", result.get("nutshell"))
