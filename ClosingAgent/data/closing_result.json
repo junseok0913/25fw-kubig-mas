@@ -598,5 +598,154 @@
         "date": "2025-12-23"
       }
     ]
+  },
+  {
+    "id": 28,
+    "speaker": "진행자",
+    "text": "이제 슬슬 마무리를 해 보겠습니다. 오늘 브리핑 내용을 한 번 정리해 주면서, 연말과 내년 초 시장을 볼 때 꼭 기억해야 할 포인트를 짚어주시죠.",
+    "sources": []
+  },
+  {
+    "id": 29,
+    "speaker": "해설자",
+    "text": "오늘은 3분기 실질 GDP가 연율 4.3퍼센트로 서프라이즈를 기록했는데도 S&P 500과 나스닥이 메가캡 기술주와 메탈 랠리를 앞세워 사상 최고를 다시 쓰면서, 강한 성장과 완화 기대가 공존하는 독특한 장면이 연출됐습니다. 성장률의 엔진은 상위 소득층 중심의 견조한 소비와 AI 데이터센터를 비롯한 메가캡 설비투자였고, 그 반대편에는 소비 심리 둔화와 중소형주의 부진, 그리고 메탈·원자재 가격 급등이라는 양극화와 과열의 그림자가 동시에 드리워져 있습니다. 금과 은 구리 같은 메탈이 기록적인 랠리로 지수를 받쳐주고 있지만, 이미 1979년 이후 최고 수준 수익률을 향해 가는 구간인 만큼, 지수의 강세를 그대로 낙관하기보다는 어떤 자산과 섹터에 성장의 과실이 쏠려 있는지, 그리고 그만큼 변동성 위험도 함께 커지고 있다는 점을 기억하는 분할 대응 전략이 필요해 보입니다.",
+    "sources": [
+      {
+        "type": "article",
+        "pk": "id#1d48318f74ba8286",
+        "title": "U.S. GDP grew at a blistering 4.3% pace in the third quarter"
+      },
+      {
+        "type": "article",
+        "pk": "id#75f5fe2f7e0eee2e",
+        "title": "Stock market today: S&P 500 notches latest 2025 record as Wall Street's winning streak reaches 4"
+      },
+      {
+        "type": "article",
+        "pk": "id#6689da8fdf66eb38",
+        "title": "A huge chunk of U.S. GDP growth is being kept alive by AI spending ‘with no guaranteed return,’ Deutsche Bank says"
+      },
+      {
+        "type": "article",
+        "pk": "id#ff65ec8af1fb68e3",
+        "title": "Gold, silver rise to records as metals stand out as trade of the year: 'Investors are just getting smarter'"
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "speaker": "진행자",
+    "text": "향후 일정도 살펴봐야겠죠. 오늘 같은 성장 서프라이즈 이후에는 어떤 지표들을 보면서 연준과 시장의 방향을 가늠해야 할까요.",
+    "sources": []
+  },
+  {
+    "id": 31,
+    "speaker": "해설자",
+    "text": "가장 먼저는 12월 30일 새벽에 나오는 연방공개시장위원회 의사록입니다. 이미 올해 세 차례 금리를 인하한 이후라 시장은 내년 추가 인하 속도를 가늠하려 하고 있는데, 이번 의사록에서 성장 서프라이즈와 메탈 랠리 같은 금융 여건 완화에 대해 어떤 경계 신호를 보냈는지가 금리 경로와 수급에 큰 힌트를 줄 수 있습니다.",
+    "sources": [
+      {
+        "type": "event",
+        "id": "391129",
+        "title": "fomc minutes",
+        "date": "2025-12-30"
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "speaker": "진행자",
+    "text": "의사록 이후에는 내년 초 고용과 성장, 그리고 금리 결정을 둘러싼 빅 이벤트들이 줄줄이 대기 중인데요. 이 가운데서는 어떤 지표를 특히 눈여겨봐야 할까요.",
+    "sources": []
+  },
+  {
+    "id": 33,
+    "speaker": "해설자",
+    "text": "내년 1월 9일 발표되는 미국 비농업 고용과 실업률은 연준이 추가 인하 속도를 조절할 때 가장 먼저 보는 지표라서 중요합니다. 직전 수치가 6만4천명 증가에 그친 가운데 다음 예상치는 1만2천명대로 더 낮게 잡혀 있고, 실업률도 4.6퍼센트에서 4.7퍼센트로 소폭 상승이 예상되는 만큼, 실제 고용이 예상보다 더 둔화되면 지금 같은 성장 서프라이즈와 메가캡 랠리 속에서도 연준이 완화 쪽으로 더 기울 수 있고, 반대로 고용이 재차 강해지면 메탈과 성장주에 쏠린 위험자산 랠리에 제동을 거는 재료가 될 수 있습니다.",
+    "sources": [
+      {
+        "type": "event",
+        "id": "394686",
+        "title": "non farm payrolls",
+        "date": "2026-01-09"
+      },
+      {
+        "type": "event",
+        "id": "394688",
+        "title": "unemployment rate",
+        "date": "2026-01-09"
+      }
+    ]
+  },
+  {
+    "id": 34,
+    "speaker": "진행자",
+    "text": "고용 데이터를 지나면 오늘 화제가 된 성장률도 한 번 더 확인하게 되죠. 그때는 무엇을 체크해야 합니까.",
+    "sources": []
+  },
+  {
+    "id": 35,
+    "speaker": "해설자",
+    "text": "1월 22일에 발표될 3분기 미국 GDP 최종치는 오늘 나온 4.3퍼센트 성장률과 디플레이터 수치가 그대로 확정되는지, 그리고 소비와 AI 설비투자 같은 세부 항목이 얼마나 조정되는지가 핵심입니다. 만약 성장률이 4퍼센트대 초반으로 굳어지면서도 물가 지표가 완만하게 내려가는 그림이 나온다면, 메가캡과 메탈을 중심으로 한 이번 랠리가 한 번 더 연장될 수 있고, 반대로 성장률이나 물가가 하향 조정되면 연준의 인하 기대와 함께 시장의 테마가 방어적인 섹터로 이동할 수도 있습니다.",
+    "sources": [
+      {
+        "type": "event",
+        "id": "388968",
+        "title": "gdp growth rate qoq final",
+        "date": "2026-01-22"
+      },
+      {
+        "type": "event",
+        "id": "387585",
+        "title": "gdp growth rate qoq",
+        "date": "2025-12-23"
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "speaker": "진행자",
+    "text": "마지막으로 연준의 실제 결정은 1월 말 회의에서 확인하게 될 텐데요. 오늘 같은 성장 서프라이즈와 AI·메탈 랠리를 염두에 두면, 그때는 어떤 시그널을 기대해야 할까요.",
+    "sources": []
+  },
+  {
+    "id": 37,
+    "speaker": "해설자",
+    "text": "1월 28일 연준 회의에서는 기준금리를 현 3.75퍼센트로 동결할 것이란 전망이 우세하지만, 성명과 기자회견에서 성장과 물가, 그리고 금융 여건을 어떻게 묘사하느냐가 관건입니다. 오늘처럼 성장률이 4퍼센트를 넘고 메가캡과 메탈이 지수를 사상 최고로 끌어올리는 국면에서는 연준이 서둘러 추가 인하 약속을 하기보다는 데이터 의존을 강조할 가능성이 크기 때문에, 투자자 입장에서는 한두 번의 인하 시나리오에 베팅하기보다는 고용과 물가, 성장 데이터를 따라가며 포트폴리오를 유연하게 조정하는 게 중요해 보입니다.",
+    "sources": [
+      {
+        "type": "event",
+        "id": "390597",
+        "title": "fed interest rate decision",
+        "date": "2026-01-28"
+      }
+    ]
+  },
+  {
+    "id": 38,
+    "speaker": "진행자",
+    "text": "오늘은 4.3퍼센트 성장 서프라이즈 속에 S&P 500이 6900선을 돌파한 메가캡 랠리, 그리고 금·은·구리 메탈 초강세까지 한꺼번에 짚어봤습니다. 강한 숫자와 뜨거운 스토리일수록 단기 흐름에 휩쓸리기 쉬운 만큼, 각자의 위험 감내 수준을 다시 한 번 점검하시면서 연말과 내년 초 중요한 경제 지표들을 차분히 체크해 보시길 권해 드립니다.",
+    "sources": [
+      {
+        "type": "article",
+        "pk": "id#1d48318f74ba8286",
+        "title": "U.S. GDP grew at a blistering 4.3% pace in the third quarter"
+      },
+      {
+        "type": "article",
+        "pk": "id#75f5fe2f7e0eee2e",
+        "title": "Stock market today: S&P 500 notches latest 2025 record as Wall Street's winning streak reaches 4"
+      },
+      {
+        "type": "article",
+        "pk": "id#ff65ec8af1fb68e3",
+        "title": "Gold, silver rise to records as metals stand out as trade of the year: 'Investors are just getting smarter'"
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "speaker": "진행자",
+    "text": "12월 23일 장마감 브리핑 여기까지고요, 함께해 주신 여러분 감사합니다.",
+    "sources": []
   }
 ]
