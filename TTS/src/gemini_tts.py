@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, TypedDict
 
 from dotenv import load_dotenv
+import yaml
 
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,12 @@ SAMPLE_RATE_HZ = 24000
 CHANNELS = 1
 SAMPLE_WIDTH_BYTES = 2  # s16le
 
-INSTRUCTIONS = (
+DEFAULT_INSTRUCTIONS = (
     "Podcast-style Korean U.S. stock market close briefing: brisk and professional; "
     "Host sounds warm and conversational, Analyst sounds confident and data-driven;"
 )
+
+DEFAULT_CONFIG_PATH = ROOT / "TTS" / "config" / "gemini_tts.yaml"
 
 
 class ScriptTurn(TypedDict):
@@ -44,6 +47,13 @@ class ChapterRange(TypedDict):
     name: str
     start_id: int
     end_id: int
+
+
+class GeminiTTSConfig(TypedDict, total=False):
+    instructions: str
+    temperature: float
+    voices: Dict[str, str]
+    gap_seconds: float
 
 
 def parse_date_arg(date_str: str) -> str:
@@ -76,9 +86,9 @@ def _speaker_to_label(speaker: str) -> Literal["speaker1", "speaker2"]:
     raise ValueError(f"지원하지 않는 speaker입니다: {speaker!r} (허용: '진행자', '해설자')")
 
 
-def build_conversation_prompt(scripts: List[ScriptTurn]) -> str:
+def build_conversation_prompt(scripts: List[ScriptTurn], *, instructions: str) -> str:
     lines: List[str] = [
-        INSTRUCTIONS,
+        instructions,
         "",
         "TTS the following conversation between speaker1 and speaker2:",
         "",
@@ -90,6 +100,77 @@ def build_conversation_prompt(scripts: List[ScriptTurn]) -> str:
             continue
         lines.append(f"{label}: {text}")
     return "\n".join(lines).strip() + "\n"
+
+
+def _getenv_nonempty(name: str) -> str | None:
+    v = os.getenv(name)
+    if v is None:
+        return None
+    v = v.strip()
+    return v if v else None
+
+
+def _load_gemini_tts_config(path: Path) -> GeminiTTSConfig:
+    """Gemini TTS 설정을 YAML로 로드한다.
+
+    파일이 없으면 기본값을 반환한다(에러 아님).
+    """
+    if not path.exists():
+        logger.info("TTS config가 없습니다. 기본값 사용: %s", path)
+        return {
+            "instructions": DEFAULT_INSTRUCTIONS,
+            "temperature": 1.0,
+            "voices": {"speaker1": "Zephyr", "speaker2": "Charon"},
+            "gap_seconds": 0.0,
+        }
+
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"TTS config YAML이 객체가 아닙니다: {path}")
+
+    instructions = raw.get("instructions")
+    if not isinstance(instructions, str) or not instructions.strip():
+        instructions = DEFAULT_INSTRUCTIONS
+
+    temperature_raw = raw.get("temperature", 1.0)
+    try:
+        temperature = float(temperature_raw)
+    except Exception as e:
+        raise ValueError(f"TTS config temperature 파싱 실패: {temperature_raw!r} ({e})")
+
+    voices = raw.get("voices") or {}
+    if not isinstance(voices, dict):
+        raise ValueError("TTS config voices는 객체여야 합니다.")
+    speaker1_voice = voices.get("speaker1", "Zephyr")
+    speaker2_voice = voices.get("speaker2", "Charon")
+    if not isinstance(speaker1_voice, str) or not speaker1_voice.strip():
+        raise ValueError("TTS config voices.speaker1가 비어있습니다.")
+    if not isinstance(speaker2_voice, str) or not speaker2_voice.strip():
+        raise ValueError("TTS config voices.speaker2가 비어있습니다.")
+
+    gap_raw = raw.get("gap_seconds", 0.0)
+    try:
+        gap_seconds = float(gap_raw)
+    except Exception as e:
+        raise ValueError(f"TTS config gap_seconds 파싱 실패: {gap_raw!r} ({e})")
+    if gap_seconds < 0:
+        raise ValueError("TTS config gap_seconds는 0 이상이어야 합니다.")
+
+    env_gap = _getenv_nonempty("TTS_GAP_SECONDS")
+    if env_gap is not None:
+        try:
+            gap_seconds = float(env_gap)
+        except Exception as e:
+            raise ValueError(f"TTS_GAP_SECONDS 파싱 실패: {env_gap!r} ({e})")
+        if gap_seconds < 0:
+            raise ValueError("TTS_GAP_SECONDS는 0 이상이어야 합니다.")
+
+    return {
+        "instructions": instructions.strip(),
+        "temperature": temperature,
+        "voices": {"speaker1": speaker1_voice.strip(), "speaker2": speaker2_voice.strip()},
+        "gap_seconds": gap_seconds,
+    }
 
 def _extract_pcm(audio_bytes: bytes) -> bytes:
     """Gemini 응답을 PCM(s16le)로 정규화한다.
@@ -218,26 +299,34 @@ def extract_inline_audio_b64(resp: Dict[str, Any]) -> str:
     return data_b64
 
 
-def gemini_generate_tts(prompt: str, *, api_key: str, timeout_s: float = 120.0) -> bytes:
+def gemini_generate_tts(
+    prompt: str,
+    *,
+    api_key: str,
+    temperature: float,
+    speaker1_voice: str,
+    speaker2_voice: str,
+    timeout_s: float = 120.0,
+) -> bytes:
     url = f"{GEMINI_BASE_URL}/{MODEL_PATH}:generateContent"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
-            "temperature": 1,
+            "temperature": temperature,
             "speechConfig": {
                 "multiSpeakerVoiceConfig": {
                     "speakerVoiceConfigs": [
                         {
                             "speaker": "speaker1",
                             "voiceConfig": {
-                                "prebuiltVoiceConfig": {"voiceName": "Zephyr"}
+                                "prebuiltVoiceConfig": {"voiceName": speaker1_voice}
                             },
                         },
                         {
                             "speaker": "speaker2",
                             "voiceConfig": {
-                                "prebuiltVoiceConfig": {"voiceName": "Charon"}
+                                "prebuiltVoiceConfig": {"voiceName": speaker2_voice}
                             },
                         },
                     ]
@@ -298,6 +387,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         logger.error("GEMINI_API_KEY가 설정되지 않았습니다. (.env 또는 환경변수)")
         return 2
 
+    try:
+        tts_cfg = _load_gemini_tts_config(DEFAULT_CONFIG_PATH)
+    except Exception as e:
+        logger.error("TTS config 로드 실패: %s", e)
+        return 2
+
+    instructions = str(tts_cfg.get("instructions") or DEFAULT_INSTRUCTIONS).strip()
+    temperature = float(tts_cfg.get("temperature") or 1.0)
+    voices = tts_cfg.get("voices") or {"speaker1": "Zephyr", "speaker2": "Charon"}
+    speaker1_voice = str(voices.get("speaker1") or "Zephyr").strip()
+    speaker2_voice = str(voices.get("speaker2") or "Charon").strip()
+    gap_seconds = float(tts_cfg.get("gap_seconds") or 0.0)
+
     script_path = ROOT / "Podcast" / date_yyyymmdd / "script.json"
     out_dir = ROOT / "Podcast" / date_yyyymmdd / "tts"
     out_wav = out_dir / "final.wav"
@@ -316,7 +418,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     prompts: List[Dict[str, Any]] = []
     for chunk in chunks:
         chunk_scripts: List[ScriptTurn] = chunk["scripts"]
-        prompt = build_conversation_prompt(chunk_scripts)
+        prompt = build_conversation_prompt(chunk_scripts, instructions=instructions)
         prompts.append({**chunk, "prompt": prompt})
 
     try:
@@ -327,7 +429,14 @@ def main(argv: Optional[List[str]] = None) -> int:
             end_id = p["end_id"]
             logger.info("Gemini TTS 요청: chapter=%s, id=%s-%s, turns=%d", name, start_id, end_id, len(p["scripts"]))
             try:
-                audio_bytes = gemini_generate_tts(p["prompt"], api_key=api_key, timeout_s=120.0)
+                audio_bytes = gemini_generate_tts(
+                    p["prompt"],
+                    api_key=api_key,
+                    temperature=temperature,
+                    speaker1_voice=speaker1_voice,
+                    speaker2_voice=speaker2_voice,
+                    timeout_s=120.0,
+                )
             except Exception:
                 logger.error("Gemini TTS 실패: chapter=%s, id=%s-%s", name, start_id, end_id)
                 raise
@@ -337,10 +446,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
     # WAV/PCM 포맷 검증 및 결합 PCM 준비 (디렉터리 생성 전 선검증)
+    gap_frames = int(gap_seconds * SAMPLE_RATE_HZ)
+    gap_pcm = b"\x00" * (gap_frames * CHANNELS * SAMPLE_WIDTH_BYTES) if gap_frames > 0 else b""
+
     combined_pcm_parts: List[bytes] = []
     try:
-        for seg in audio_segments:
+        for idx, seg in enumerate(audio_segments):
             combined_pcm_parts.append(_extract_pcm(seg["audio_bytes"]))
+            if gap_pcm and idx < len(audio_segments) - 1:
+                combined_pcm_parts.append(gap_pcm)
     except Exception as e:
         logger.error("오디오 포맷 처리 실패: %s", e)
         return 1

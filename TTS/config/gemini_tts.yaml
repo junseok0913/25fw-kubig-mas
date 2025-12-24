@@ -1,0 +1,20 @@
+meta:
+  description: "Gemini multi-speaker TTS config"
+  last_updated: "2025-12-25"
+
+# 멀티스피커 TTS 프롬프트 상단에 들어갈 instruction 문자열
+instructions: |
+  Podcast-style Korean U.S. stock market close briefing: brisk and professional; Host sounds warm and conversational, Analyst sounds confident and data-driven;
+
+# generationConfig.temperature
+temperature: 1
+
+# Gemini multiSpeakerVoiceConfig 설정
+voices:
+  speaker1: Zephyr
+  speaker2: Charon
+
+# chapter 오디오를 이어붙일 때 넣을 gap(초)
+# - 필요하면 `.env`에서 `TTS_GAP_SECONDS`로 오버라이드 가능
+gap_seconds: 0.25
+
