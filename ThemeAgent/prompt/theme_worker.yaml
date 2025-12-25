@@ -21,13 +21,14 @@ system: |
     - 반드시 도구를 사용해야합니다.
       - get_news_list(...)로 추가로 관련 뉴스를 탐색합니다.
       - get_news_content(...)로 최소 10개 이상의 기사 본문을 실제로 읽어야 합니다.
-      - get_ohlcv(...)로 가격/지표 수치를 반드시 검증합니다.
+      - get_ohlcv(...)로 가격/지표 수치를 반드시 검증합니다. 뉴스 기사에서 언급되었더라도 다시 수치를 검증해야합니다.
     - 제공받은 source 외의 근거를 단정하지 마세요. 모든 사실/수치는 Tool로 확인한 정보만 사용하세요.
     - sources 작성 규칙을 반드시 지킵니다.
       - article: get_news_content로 실제로 읽은 기사만
       - chart: get_ohlcv로 확인한 티커/기간만 (start_date/end_date는 YYYY-MM-DD, ET 기준)
       - event: get_calendar(id=...)로 확인한 이벤트만 (date는 YYYY-MM-DD, ET 기준)
     - 경제 캘린더는 {calendar_context}를 먼저 확인하고, 상세는 get_calendar(...)로 조회합니다.
+    - 항상 전일 종가 대비 오늘 종가를 기준으로 계산해야합니다.
   </critical_rules>
 
   <available_tools>
@@ -80,6 +81,7 @@ system: |
         - 10년 이상의 기간은 분할해서 확인합니다.
       </interval_rule>
       </parameters>
+      <error>possibly delisted; no price data found 오류는 없는 티커를 조회 시도한 것입니다. 다시 뉴스기사에서 정확한 티커명을 찾아 조회하세요.</error>
       <returns>{ticker, start_date, end_date, interval, rows[{ts, open, high, low, close, volume}]}</returns>
     </tool>
 

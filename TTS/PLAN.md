@@ -40,41 +40,42 @@
 - `batch_timeout_seconds`
 - `chapter_gap_seconds` / `common_gap_seconds`
 - `turns`: `scripts[]`를 id순으로 정렬한 턴 목록(+chapter name 매핑)
-- `turn_audios`: 턴별 응답 오디오(bytes)
+- `turn_audios`: 턴별 `wav` 경로 + `frames` 메타데이터(바이너리는 state에 저장하지 않음 - LangSmith 용량 초과 방지)
 - `timeline`: 턴별 타임라인(start/end ms)
 - `out_wav`: 최종 저장 경로
 
 ### Graph 노드(초안)
 - `load_config`: `TTS/config/gemini_tts.yaml` 로드
-- `validate_paths`: 입력 파일 존재, 출력 디렉터리 미존재(덮어쓰기 금지)
+- `validate_paths`: 입력 파일 존재 확인
 - `load_script`: `script.json` 로드
 - `map_turns_with_chapter`: `chapter` 범위로 turn→chapter 매핑(없으면 all로 간주)
 - `build_turn_prompts`: 턴 단위(single speaker) 프롬프트 구성
 - `generate_turn_audio_parallel`: 턴 단위 Gemini TTS 호출(배치=4개, 배치가 전부 응답해야 다음 배치 진행, 배치 타임아웃 적용)
-  - 각 턴의 응답이 오는 즉시 `Podcast/{date}/tts/turns/{id}.wav`로 저장합니다(중간 실패에도 부분 결과 유지).
+  - 각 턴의 응답이 오는 즉시 `Podcast/{date}/tts/{id}.wav`로 저장합니다(중간 실패에도 부분 결과 유지).
 - `compute_timeline`: PCM frame 기반으로 duration_ms 계산 후, gap 규칙으로 start/end ms 산출
-- `merge_audio`: PCM 정규화 + gap 삽입 후 전체 결합
+- `merge_audio`: `tts/*.wav`를 순서대로 읽어서 gap(silence)을 삽입하며 스트리밍으로 `Podcast/{date}/{date}.wav` 생성
 - `write_outputs`:
-  - `turns/{id}.wav` (턴별 오디오)
+  - `tts/{id}.wav` (턴별 오디오)
   - `timeline.json` (턴별 start_time_ms/end_time_ms)
-  - `{date}.wav`
+  - `Podcast/{date}/{date}.wav`
+  - `Podcast/{date}/{date}.json` (scripts[]에 time 주입)
 
 ## 입출력 경로
 ### 입력
 - `Podcast/{date}/script.json`
 
 ### 출력
-- 출력 디렉터리: `Podcast/{date}/tts/`
-  - `{date}.wav`
-  - `turns/` (턴별 wav 저장)
+- `Podcast/{date}/tts/`
+  - `{id}.wav` (턴별 wav)
   - `timeline.json` (턴별 타임라인)
-- 프로젝트 루트: `{date}.json`
-  - `Podcast/{date}/script.json`을 복사한 뒤, 각 `scripts[]` 항목에 `"time": [start_ms, end_ms]`를 추가한 결과
+- `Podcast/{date}/`
+  - `{date}.wav` (최종 합친 오디오)
+  - `{date}.json` (`script.json` 복사 + scripts[]에 `"time": [start_ms, end_ms]` 주입)
 
 ## Overwrite 정책(단일 실행)
-- `Podcast/{date}/tts/turns/{id}.wav`가 이미 존재하면 해당 turn은 **TTS 호출을 스킵**하고 파일을 그대로 사용합니다.
+- `Podcast/{date}/tts/{id}.wav`가 이미 존재하면 해당 turn은 **TTS 호출을 스킵**하고 파일을 그대로 사용합니다.
 - 모든 turn wav가 이미 존재하면 **TTS 호출 없이** timeline/merge 단계로 진행합니다.
-- `Podcast/{date}/tts/{date}.wav`와 `Podcast/{date}/tts/timeline.json`은 **항상 덮어쓰기**합니다.
+- `Podcast/{date}/{date}.wav`, `Podcast/{date}/tts/timeline.json`, `Podcast/{date}/{date}.json`은 **항상 덮어쓰기**합니다.
 
 ## 스크립트 → 단일 화자(턴) 프롬프트 변환
 - 턴마다 **해당 speaker의 voice 1개만 선택**하여 single-speaker TTS를 요청합니다.

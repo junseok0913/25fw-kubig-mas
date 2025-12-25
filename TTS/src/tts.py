@@ -3,7 +3,7 @@
 목표:
 - 입력 `Podcast/{date}/script.json`의 `scripts[]`를 기반으로, **turn(1개) 단위**로 TTS를 생성한다.
 - turn 오디오 길이(샘플/프레임 기반)를 이용해 `start_time_ms`/`end_time_ms` 타임라인을 계산한다.
-- 최종 `{date}.wav`를 만들고, `turns/*.wav`와 `timeline.json`을 함께 저장한다.
+- 최종 `{date}.wav`를 만들고, `tts/*.wav`(턴별)와 `timeline.json`을 함께 저장한다.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from langgraph.graph import END, START, StateGraph
 from langsmith.run_helpers import traceable
 from langsmith.utils import ContextThreadPoolExecutor
 
-from .utils.gemini_tts import MODEL_PATH, gemini_generate_tts_traced
+from .utils.gemini_tts import gemini_generate_tts_traced, get_model_path
 from .utils.tracing import configure_tracing
 
 logger = logging.getLogger(__name__)
@@ -87,8 +87,7 @@ class TurnAudio(TypedDict):
     speaker: Literal["진행자", "해설자"]
     label: Literal["speaker1", "speaker2"]
     chapter: str
-    audio_bytes: bytes
-    pcm: bytes
+    wav: str  # out_dir 기준 상대경로 (예: 00.wav)
     frames: int
 
 
@@ -125,7 +124,6 @@ class TTSState(TypedDict, total=False):
     turn_audios: List[TurnAudio]
     gaps_after_frames: List[int]
     timeline: List[TimelineItem]
-    combined_pcm: bytes
     out_wav: str
 
 
@@ -148,6 +146,21 @@ def _write_wav(path: Path, pcm: bytes) -> None:
         wf.setsampwidth(SAMPLE_WIDTH_BYTES)
         wf.setframerate(SAMPLE_RATE_HZ)
         wf.writeframes(pcm)
+
+
+def _read_wav_frames(path: Path) -> int:
+    with wave.open(str(path), "rb") as wf:
+        channels = wf.getnchannels()
+        sampwidth = wf.getsampwidth()
+        fr = wf.getframerate()
+        frames = wf.getnframes()
+    if channels != CHANNELS or sampwidth != SAMPLE_WIDTH_BYTES or fr != SAMPLE_RATE_HZ:
+        raise ValueError(
+            "예상치 못한 WAV 포맷입니다: "
+            f"path={path}, channels={channels}, sampwidth={sampwidth}, fr={fr} "
+            f"(expected channels={CHANNELS}, sampwidth={SAMPLE_WIDTH_BYTES}, fr={SAMPLE_RATE_HZ})"
+        )
+    return int(frames)
 
 
 def _extract_pcm(audio_bytes: bytes) -> bytes:
@@ -459,10 +472,24 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
     if out_dir.exists() and not out_dir.is_dir():
         raise NotADirectoryError(f"out_dir가 디렉터리가 아닙니다: {out_dir}")
     out_dir.mkdir(parents=True, exist_ok=True)
-    turns_dir = out_dir / "turns"
-    if turns_dir.exists() and not turns_dir.is_dir():
-        raise NotADirectoryError(f"turns_dir가 디렉터리가 아닙니다: {turns_dir}")
-    turns_dir.mkdir(parents=True, exist_ok=True)
+    # 레거시 호환: 예전에는 `tts/turns/*.wav`로 저장했으므로, 존재하면 `tts/*.wav`로 이동한다.
+    legacy_turns_dir = out_dir / "turns"
+    if legacy_turns_dir.exists():
+        if not legacy_turns_dir.is_dir():
+            raise NotADirectoryError(f"legacy_turns_dir가 디렉터리가 아닙니다: {legacy_turns_dir}")
+        moved = 0
+        for legacy_wav in sorted(legacy_turns_dir.glob("*.wav")):
+            target = out_dir / legacy_wav.name
+            if target.exists():
+                continue
+            legacy_wav.replace(target)
+            moved += 1
+        if moved:
+            logger.info("레거시 turns 폴더 마이그레이션: moved=%d, from=%s, to=%s", moved, legacy_turns_dir, out_dir)
+        try:
+            legacy_turns_dir.rmdir()
+        except OSError:
+            pass
 
     max_id = max(int(r["id"]) for r in requests)
     width = max(2, len(str(max_id)))
@@ -470,7 +497,7 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
     remaining_missing_ids: set[int] = set()
     for r in requests:
         tid = int(r["id"])
-        wav_path = turns_dir / f"{str(tid).zfill(width)}.wav"
+        wav_path = out_dir / f"{str(tid).zfill(width)}.wav"
         if not wav_path.exists():
             remaining_missing_ids.add(tid)
 
@@ -478,16 +505,12 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
         tid = int(r["id"])
         chapter = str(r.get("chapter") or "all")
         speaker = str(r.get("speaker") or "")
-        wav_path = turns_dir / f"{str(tid).zfill(width)}.wav"
+        wav_path = out_dir / f"{str(tid).zfill(width)}.wav"
 
         if wav_path.exists():
             t0 = time.monotonic()
             logger.info("Gemini TTS 스킵(기존 파일): id=%s, chapter=%s, speaker=%s", tid, chapter, speaker)
-            wav_bytes = wav_path.read_bytes()
-            pcm = _extract_pcm(wav_bytes)
-            if len(pcm) % BYTES_PER_FRAME != 0:
-                raise ValueError(f"PCM 바이트 길이가 frame 단위로 나누어지지 않습니다: id={tid}, bytes={len(pcm)}")
-            frames = len(pcm) // BYTES_PER_FRAME
+            frames = _read_wav_frames(wav_path)
             elapsed_ms = int(round((time.monotonic() - t0) * 1000))
             logger.info(
                 "Gemini TTS 로드 완료: id=%s, chapter=%s, frames=%d, elapsed_ms=%d, wav=%s",
@@ -502,8 +525,7 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
                 "speaker": r["speaker"],
                 "label": r["label"],
                 "chapter": r["chapter"],
-                "audio_bytes": wav_bytes,
-                "pcm": pcm,
+                "wav": wav_path.name,
                 "frames": frames,
             }
 
@@ -549,8 +571,7 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
             "speaker": r["speaker"],
             "label": r["label"],
             "chapter": r["chapter"],
-            "audio_bytes": audio_bytes,
-            "pcm": pcm,
+            "wav": wav_path.name,
             "frames": frames,
         }
 
@@ -661,7 +682,7 @@ def compute_timeline_node(state: TTSState) -> TTSState:
         end_ms = int(round(end_frames * 1000 / SAMPLE_RATE_HZ))
         duration_ms = max(0, end_ms - start_ms)
 
-        wav_rel = f"turns/{str(tid).zfill(width)}.wav"
+        wav_rel = str(a.get("wav") or f"{str(tid).zfill(width)}.wav")
         timeline.append(
             {
                 "id": tid,
@@ -686,57 +707,91 @@ def merge_audio_node(state: TTSState) -> TTSState:
         raise ValueError("turn_audios가 비어 있습니다.")
     if len(gaps_after_frames) != len(turn_audios):
         raise ValueError("gaps_after_frames 길이가 turn_audios와 일치하지 않습니다.")
+    out_dir = state.get("out_dir")
+    if out_dir is None:
+        raise ValueError("out_dir가 state에 없습니다.")
+    date = str(state.get("date") or "").strip()
+    if not date:
+        raise ValueError("date가 state에 없습니다.")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    base_dir = out_dir.parent
+    base_dir.mkdir(parents=True, exist_ok=True)
+    out_wav = base_dir / f"{date}.wav"
 
     silence_cache: Dict[int, bytes] = {0: b""}
-    pcm_parts: List[bytes] = []
-    for idx, a in enumerate(turn_audios):
-        pcm_parts.append(a["pcm"])
-        gap_frames = int(gaps_after_frames[idx])
-        if gap_frames:
-            if gap_frames not in silence_cache:
-                silence_cache[gap_frames] = b"\x00" * (gap_frames * BYTES_PER_FRAME)
-            pcm_parts.append(silence_cache[gap_frames])
+    with wave.open(str(out_wav), "wb") as wf_out:
+        wf_out.setnchannels(CHANNELS)
+        wf_out.setsampwidth(SAMPLE_WIDTH_BYTES)
+        wf_out.setframerate(SAMPLE_RATE_HZ)
 
-    combined_pcm = b"".join(pcm_parts)
-    return {**state, "combined_pcm": combined_pcm}
+        for idx, a in enumerate(turn_audios):
+            wav_rel = str(a.get("wav") or "").strip()
+            if not wav_rel:
+                raise ValueError(f"turn_audios[{idx}].wav가 비어 있습니다.")
+            in_path = out_dir / wav_rel
+            if not in_path.exists():
+                raise FileNotFoundError(f"턴 WAV 파일이 없습니다: {in_path}")
+
+            with wave.open(str(in_path), "rb") as wf_in:
+                channels = wf_in.getnchannels()
+                sampwidth = wf_in.getsampwidth()
+                fr = wf_in.getframerate()
+                if channels != CHANNELS or sampwidth != SAMPLE_WIDTH_BYTES or fr != SAMPLE_RATE_HZ:
+                    raise ValueError(
+                        "예상치 못한 WAV 포맷입니다: "
+                        f"path={in_path}, channels={channels}, sampwidth={sampwidth}, fr={fr} "
+                        f"(expected channels={CHANNELS}, sampwidth={SAMPLE_WIDTH_BYTES}, fr={SAMPLE_RATE_HZ})"
+                    )
+
+                while True:
+                    chunk = wf_in.readframes(8192)
+                    if not chunk:
+                        break
+                    wf_out.writeframes(chunk)
+
+            gap_frames = int(gaps_after_frames[idx])
+            if gap_frames:
+                if gap_frames not in silence_cache:
+                    silence_cache[gap_frames] = b"\x00" * (gap_frames * BYTES_PER_FRAME)
+                wf_out.writeframes(silence_cache[gap_frames])
+
+    return {**state, "out_wav": str(out_wav)}
 
 
 def write_outputs_node(state: TTSState) -> TTSState:
     out_dir = state.get("out_dir")
     turn_audios = state.get("turn_audios") or []
     timeline = state.get("timeline") or []
-    combined_pcm = state.get("combined_pcm")
     script_path = state.get("script_path")
+    out_wav_raw = state.get("out_wav")
     if out_dir is None:
         raise ValueError("out_dir가 state에 없습니다.")
     if not turn_audios:
         raise ValueError("turn_audios가 비어 있습니다.")
     if not timeline:
         raise ValueError("timeline이 비어 있습니다.")
-    if combined_pcm is None:
-        raise ValueError("combined_pcm가 비어 있습니다.")
     if script_path is None:
         raise ValueError("script_path가 state에 없습니다.")
+    if not isinstance(out_wav_raw, str) or not out_wav_raw.strip():
+        raise ValueError("out_wav가 비어 있습니다. merge_audio_node를 확인하세요.")
 
-    # generate 단계에서 out_dir/turns를 이미 만들고(턴 오디오를 응답 즉시 저장),
-    # 여기서는 최종 산출물(timeline/final)을 저장한다.
+    # generate 단계에서 out_dir에 턴 오디오(wav)를 응답 즉시 저장하고,
+    # 여기서는 최종 산출물(timeline + 날짜 JSON)을 저장한다.
     out_dir.mkdir(parents=True, exist_ok=True)
-    turns_dir = out_dir / "turns"
-    turns_dir.mkdir(parents=True, exist_ok=True)
 
-    max_id = max(int(a["id"]) for a in turn_audios)
-    width = max(2, len(str(max_id)))
-
-    # turn wav 저장
-    for a in turn_audios:
-        tid = int(a["id"])
-        wav_path = turns_dir / f"{str(tid).zfill(width)}.wav"
+    # turn wav 존재 확인
+    for idx, a in enumerate(turn_audios):
+        wav_rel = str(a.get("wav") or "").strip()
+        if not wav_rel:
+            raise ValueError(f"turn_audios[{idx}].wav가 비어 있습니다.")
+        wav_path = out_dir / wav_rel
         if not wav_path.exists():
-            _write_wav(wav_path, a["pcm"])
+            raise FileNotFoundError(f"턴 WAV 파일이 없습니다: {wav_path}")
 
     # timeline.json 저장
     date = state.get("date") or ""
-    final_wav_name = f"{date}.wav"
+    final_wav_name = f"../{date}.wav"
     payload = {
         "date": date,
         "audio": {
@@ -753,9 +808,9 @@ def write_outputs_node(state: TTSState) -> TTSState:
     }
     (out_dir / "timeline.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # 최종 WAV 저장
-    out_wav = out_dir / final_wav_name
-    _write_wav(out_wav, combined_pcm)
+    out_wav = Path(out_wav_raw)
+    if not out_wav.exists():
+        raise FileNotFoundError(f"최종 WAV 파일이 없습니다: {out_wav}")
 
     # 날짜 파일 저장: 기존 script.json을 복사하고 scripts[] 각 항목에 time=[start_ms,end_ms]를 주입한다.
     time_by_id: Dict[int, List[int]] = {}
@@ -781,7 +836,7 @@ def write_outputs_node(state: TTSState) -> TTSState:
             raise ValueError(f"scripts[{idx}].id={tid_int}에 대한 timeline 항목이 없습니다.")
         turn["time"] = time_by_id[tid_int]
 
-    root_out = ROOT_DIR / f"{date}.json"
+    root_out = script_path.parent / f"{date}.json"
     if root_out.exists():
         logger.warning("날짜 JSON 파일이 이미 존재합니다. 덮어씁니다: %s", root_out)
     root_out.write_text(json.dumps(script_obj, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -827,7 +882,7 @@ def _trace_inputs_pipeline(inputs: dict) -> dict:
         "date": inputs.get("date"),
         "script_path": _p(inputs.get("script_path")),
         "out_dir": _p(inputs.get("out_dir")),
-        "model_path": MODEL_PATH,
+        "model_path": get_model_path(),
         "api_key_present": bool(os.getenv("GEMINI_API_KEY")),
     }
 

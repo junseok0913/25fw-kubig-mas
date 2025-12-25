@@ -10,7 +10,7 @@ instructions:
     Podcast-style Korean U.S. stock market close briefing: brisk and professional; Analyst sounds confident and data-driven;
 
 # generationConfig.temperature
-temperature: 1
+temperature: 0.6
 
 # 진행자/해설자별 voiceName
 voices:
@@ -18,7 +18,7 @@ voices:
   speaker2: Charon
 
 # 요청 타임아웃(초) - TTS 합성이 길어질 수 있으므로 넉넉히 설정 권장
-timeout_seconds: 300
+timeout_seconds: 120
 
 # 동시 요청 수 (턴 단위로 요청하므로 기본 4)
 max_parallel_requests: 6
@@ -30,5 +30,5 @@ batch_timeout_seconds: 60
 # gap 설정(초)
 # - common_gap_seconds: 같은 챕터 내에서 turn 사이에 넣을 기본 gap
 # - chapter_gap_seconds: 챕터 경계에서는 common gap 대신 이 값으로 대체
-common_gap_seconds: 0.25
-chapter_gap_seconds: 0.5
+common_gap_seconds: 0.5
+chapter_gap_seconds: 1

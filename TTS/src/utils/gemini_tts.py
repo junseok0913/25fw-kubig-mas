@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import os
 import urllib.error
 import urllib.request
 from hashlib import sha256
@@ -15,7 +16,21 @@ from langsmith.run_helpers import traceable
 logger = logging.getLogger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
-MODEL_PATH = "models/gemini-2.5-pro-preview-tts"  # fixed as requested
+DEFAULT_MODEL_PATH = "models/gemini-2.5-pro-preview-tts"
+
+
+def get_model_path() -> str:
+    """TTS 모델 경로를 반환한다.
+
+    - `.env` 또는 환경변수 `GEMINI_TTS_MODEL`로 오버라이드 가능
+    - `models/` prefix가 없으면 자동으로 붙인다.
+    """
+    raw = (os.getenv("GEMINI_TTS_MODEL") or DEFAULT_MODEL_PATH).strip()
+    if not raw:
+        return DEFAULT_MODEL_PATH
+    if not raw.startswith("models/"):
+        raw = f"models/{raw}"
+    return raw
 
 
 def _is_wav(data: bytes) -> bool:
@@ -50,7 +65,8 @@ def gemini_generate_tts(
     speaker2_voice: str,
     timeout_s: float = 120.0,
 ) -> bytes:
-    url = f"{GEMINI_BASE_URL}/{MODEL_PATH}:generateContent"
+    model_path = get_model_path()
+    url = f"{GEMINI_BASE_URL}/{model_path}:generateContent"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -165,4 +181,3 @@ def gemini_generate_tts_traced(
         speaker2_voice=speaker2_voice,
         timeout_s=timeout_s,
     )
-

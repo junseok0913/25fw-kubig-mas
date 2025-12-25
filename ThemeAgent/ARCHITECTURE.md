@@ -165,7 +165,8 @@ class ThemeState(TypedDict, total=False):
             # turn["section"] = "theme"
             # turn["theme_index"] = idx
             merged.append(turn)
-    state["scripts"] = merged
+    # 전역 id(0..N-1) 재부여(Refiner patch 적용을 위해 id 안정화)
+    state["scripts"] = normalize_script_turns(merged)
     ```
 
 - **`refine_transitions` (Refiner)**
@@ -176,20 +177,23 @@ class ThemeState(TypedDict, total=False):
     - 사실/수치/출처는 최대한 유지하고, 표현/호흡만 다듬는 **방송 대본 편집자** 역할.
     - Refiner 단계는 Tool을 바인딩하지 않는다(단순 편집).
   - 입력:
-    - `ThemeState.scripts` (Opening+Theme 전체)
-    - `themes`, `nutshell` (참고용)
+    - `ThemeState.scripts` (Opening+Theme 전체)에서 **최소 표현(minimal)** 으로 변환해 전달:
+      - `[{id, speaker, text}, ...]` (sources 미제공)
+    - `themes` (참고용)
   - 출력:
     ```json
     {
-      "scripts": [
-        {"id": 0, "speaker": "진행자", "text": "...", "sources": [...]},
-        {"id": 1, "speaker": "해설자", "text": "...", "sources": [...]}
+      "edits": [
+        {"id": 12, "speaker": "진행자", "text": "..."},
+        {"id": 13, "speaker": "해설자", "text": "..."}
       ]
     }
     ```
-  - Refiner는 새로운 배열을 반환하고, 이를 `ThemeState["scripts"]`에 덮어씀.
+  - Refiner는 “수정이 필요한 턴만” 반환하며, ThemeAgent는 해당 `id`의 `speaker/text`만 덮어쓴다.
+    - sources는 Refiner 입력/출력에 포함되지 않으며, 원본 scripts의 sources를 그대로 유지한다.
   - 운영 안전장치:
-    - Refiner 입력 JSON은 indent 없이 압축해 전송해 토큰/전송량을 줄인다.
+    - Refiner 입력은 sources를 제외한 최소 표현을 사용하고, JSON은 indent 없이 압축해 전송해 토큰/전송량을 줄인다.
+    - 파싱 실패/스키마 불일치 시 최대 재시도 후, 실패하면 refine 없이 merge 결과를 그대로 사용한다.
     - 타임아웃/네트워크 오류 시, refine 없이 merge 결과를 그대로 사용한다.
 
 ---

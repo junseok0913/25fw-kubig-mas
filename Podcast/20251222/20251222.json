@@ -1,0 +1,1013 @@
+{
+  "date": "20251222",
+  "user_tickers": [],
+  "chapter": [
+    {
+      "name": "opening",
+      "start_id": 0,
+      "end_id": 3
+    },
+    {
+      "name": "theme",
+      "start_id": 4,
+      "end_id": 27
+    },
+    {
+      "name": "closing",
+      "start_id": 28,
+      "end_id": 36
+    }
+  ],
+  "scripts": [
+    {
+      "id": 0,
+      "speaker": "진행자",
+      "text": "12월 22일 장마감 브리핑입니다. 크리스마스를 앞둔 짧은 한 주의 시작인데도 미국 증시는 조용히 오른 모습이었는데요, 오늘 장을 한눈에 정리해 주시죠.",
+      "sources": [],
+      "time": [
+        0,
+        11491
+      ]
+    },
+    {
+      "id": 1,
+      "speaker": "해설자",
+      "text": "금리 인하 기대와 AI 강세 속에 미국 증시는 3거래일 연속 상승하고 금과 은은 사상 최고가를 경신했습니다. S&P 500 지수는 약 0.6퍼센트, 다우와 나스닥 지수는 각각 0.5퍼센트 안팎 올랐고, 소형주인 러셀 2000 지수는 1퍼센트가 넘는 상승으로 탄력을 보였습니다. 같은 날 금과 은 가격은 올해 들어 두 자릿수 후반대 상승률을 기록하며 다시 한 번 기록을 갈아치웠고, 미 국채 10년물 금리는 소폭 오른 4퍼센트대 중반에서 움직이면서 위험자산과 안전자산이 동시에 강세를 보인 특이한 장이었습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#56b68d5db5635722",
+          "title": "How major US stock indexes fared Monday, 12/22/2025"
+        },
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        },
+        {
+          "type": "chart",
+          "ticker": "^GSPC",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "^IXIC",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "^DJI",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "^RUT",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "^TNX",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        11991,
+        46962
+      ]
+    },
+    {
+      "id": 2,
+      "speaker": "진행자",
+      "text": "지수들은 차분히 올랐지만 체감상으로는 금값 급등과 기술주 반등, 그리고 워너 브라더스를 둘러싼 인수전 이야기가 특히 눈에 띄었습니다. 투자자 입장에서 보면 오늘 장을 실제로 움직인 핵심 재료가 무엇인지가 궁금한데요, 어떻게 정리해 볼 수 있을까요.",
+      "sources": [],
+      "time": [
+        47462,
+        64713
+      ]
+    },
+    {
+      "id": 3,
+      "speaker": "해설자",
+      "text": "우선 연말을 앞두고 금과 은이 사상 최고 수준까지 치솟은 배경에는 베네수엘라를 둘러싼 지정학적 긴장과 달러 약세, 연준 인사가 금리를 더 내리지 않으면 경기 침체 위험이 커질 수 있다고 언급한 점 등으로 내년 이후 추가 인하 기대가 겹치면서 관련 금광주와 귀금속 상장지수펀드에 강한 매수세가 붙은 점을 들 수 있습니다. 동시에 엔비디아를 비롯한 인공지능 반도체와 알파벳 같은 대형 기술 기업들이 중국향 고성능 칩 출하 재개와 데이터센터 전력 인프라 인수 소식에 힘입어 다시 주가를 끌어올리며 나스닥을 지지했습니다. 여기에 래리 엘리슨이 400억 달러가 넘는 자금을 개인 보증하며 파라마운트 스카이댄스의 워너 브라더스 디스커버리 인수전을 밀어붙이자 미디어주 전반에까지 매수 심리가 퍼진 것도 특징이었습니다. 정리하면 귀금속 랠리와 금리 기대, AI와 빅테크 모멘텀, 할리우드 대형 인수전이라는 세 가지 축이 오늘 시장을 움직였고, 이 가운데 먼저 안전자산 선호를 보여주는 귀금속 흐름부터 하나씩 조금 더 자세히 살펴보겠습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#1c133280558a83d7",
+          "title": "Gold hits new record as Trump ramps up pressure on Venezuela"
+        },
+        {
+          "type": "article",
+          "pk": "id#c83cce13144d7987",
+          "title": "Analysis-Dire year for dollar has little light at end of tunnel in 2026"
+        },
+        {
+          "type": "article",
+          "pk": "id#d0ecec4221554aa9",
+          "title": "Fed Risks Recession Without More Interest Rate Cuts, Miran Says"
+        },
+        {
+          "type": "article",
+          "pk": "id#58d7819b29889c83",
+          "title": "Exclusive-Nvidia aims to begin H200 chip shipments to China by mid-February, sources say"
+        },
+        {
+          "type": "article",
+          "pk": "id#7dc44f830133144d",
+          "title": "Google's parent buys data center energy specialist Intersect for $4.75 billion to help power AI"
+        },
+        {
+          "type": "article",
+          "pk": "id#62c33abc01112ff7",
+          "title": "Larry Ellison gives $40.4 billion guarantee for Paramount bid for Warner Bros"
+        },
+        {
+          "type": "article",
+          "pk": "id#8948fa7578f8a538",
+          "title": "Paramount’s new, hostile offer to Warner Bros. Discovery: Larry Ellison will personally guarantee $40 billion"
+        }
+      ],
+      "time": [
+        65213,
+        128704
+      ]
+    },
+    {
+      "id": 4,
+      "speaker": "진행자",
+      "text": "앞에서 올해 금과 은이 사상 최고가를 경신하면서도 미국 증시가 3거래일 연속 오르는, 안전자산과 위험자산이 동시에 강세를 보이는 장세라고 짚어봤는데요. 이제는 왜 이렇게까지 귀금속으로 돈이 몰리는지, 안전선호라는 관점에서 조금 더 들여다보겠습니다. 오늘 금값이 실제로 어느 정도까지 올라왔는지부터 정리해 주시죠.",
+      "sources": [],
+      "time": [
+        129704,
+        151435
+      ]
+    },
+    {
+      "id": 5,
+      "speaker": "해설자",
+      "text": "오늘 뉴욕 상품거래소 기준으로 금 선물 가격은 온스당 4천4백달러 중반까지 치솟으면서 10월 기록을 다시 넘겼고, 지난 19일 종가와 비교하면 하루 만에 약 2퍼센트 가까이 오른 수준입니다. 올해 들어서만 보면 금 가격은 대략 70퍼센트, 은은 130에서 140퍼센트까지 급등해 두 금속 모두 1979년 이후 가장 가파른 연간 상승률을 기록하고 있습니다. 이를 추종하는 상장지수펀드 GLD와 금광주 ETF GDX도 지난 금요일 이후 각각 2퍼센트 안팎, 3퍼센트 가까이 뛰면서 주식시장 안에서도 귀금속과 관련 종목이 뚜렷한 강세 축으로 부상한 상태입니다. 단순한 연말 랠리라기보다는 해를 통틀어 누적된 수요가 정점을 찍는 국면이라는 점에서 의미가 있습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        },
+        {
+          "type": "article",
+          "pk": "id#79b36bb6b3647913",
+          "title": "Gold, Silver, and Copper Are All Hitting Record Highs—Here's What's Driving the Frenzy"
+        },
+        {
+          "type": "article",
+          "pk": "id#1c133280558a83d7",
+          "title": "Gold hits new record as Trump ramps up pressure on Venezuela"
+        },
+        {
+          "type": "article",
+          "pk": "id#0e0f15b52a29b873",
+          "title": "Chaos, cheap money, and a collapse in crypto send gold up 69% for the year, hitting a new record high"
+        },
+        {
+          "type": "article",
+          "pk": "id#bf43288febcdc55a",
+          "title": "What's behind the surge in gold and silver prices?"
+        },
+        {
+          "type": "chart",
+          "ticker": "GC=F",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "GLD",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "GDX",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        151935,
+        203146
+      ]
+    },
+    {
+      "id": 6,
+      "speaker": "진행자",
+      "text": "말씀만 들어도 인플레이션 피크 때보다 더 강한 귀금속 랠리라는 느낌인데, 시장에서는 이제 금을 단순한 원자재가 아니라 통화 대체 자산에 가깝게 본다는 얘기까지 나옵니다. 금값을 밀어올리는 재료들을 금리와 달러, 그리고 지정학 세 갈래로 나눠서 정리해 주실 수 있을까요.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        }
+      ],
+      "time": [
+        203646,
+        221817
+      ]
+    },
+    {
+      "id": 7,
+      "speaker": "해설자",
+      "text": "먼저 통화정책 측면에서는 연방준비제도가 이미 세 차례 기준금리를 인하한 데 이어 내년에도 두 차례 추가 인하가 있을 것이라는 기대가 커지면서, 이자가 나오지 않는 금의 기회비용이 크게 줄어든 것이 핵심입니다. 오늘도 연방준비제도 위원인 스티븐 미런이 금리를 더 낮추지 않으면 경기 침체 위험이 커질 수 있다고 경고한 만큼 시장은 한동안 완화적 통화정책과 달러 약세가 이어질 것으로 보고 있고, 실제로 달러 지수는 올해 9퍼센트가량 하락해 8년 만에 최악의 한 해를 보내고 있습니다. 둘째로 지정학 리스크가 겹치고 있습니다. 미국이 베네수엘라산 원유를 실은 유조선들을 잇달아 나포하고 추가 선박을 추격하는 등 사실상 원유 봉쇄를 강화하는 가운데, 우크라이나가 러시아 그림자 선대 유조선을 지중해에서 드론으로 타격하는 등 에너지 공급을 둘러싼 긴장이 커지자 금과 은의 전통적 안전자산 역할이 다시 부각됐습니다. 마지막으로 중앙은행들이 외환보유액의 일부를 달러에서 금으로 옮기고, 개인과 기관 자금이 금 현물과 상장지수펀드로 꾸준히 유입되면서 화폐 가치 희석을 피하기 위한 이른바 탈법정통화 거래가 올해 내내 금값의 하방을 받쳐줬다는 분석입니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#9e4894ca63cd8d66",
+          "title": "Gold Rises to Record High on Rate-Cut Bets and Venezuela Tension"
+        },
+        {
+          "type": "article",
+          "pk": "id#d0ecec4221554aa9",
+          "title": "Fed Risks Recession Without More Interest Rate Cuts, Miran Says"
+        },
+        {
+          "type": "article",
+          "pk": "id#c83cce13144d7987",
+          "title": "Analysis-Dire year for dollar has little light at end of tunnel in 2026"
+        },
+        {
+          "type": "article",
+          "pk": "id#1c133280558a83d7",
+          "title": "Gold hits new record as Trump ramps up pressure on Venezuela"
+        },
+        {
+          "type": "article",
+          "pk": "id#062573b68549275b",
+          "title": "Stock market today: Nasdaq, S&P 500, Dow futures rise as tech recovers, while gold climbs to record high"
+        },
+        {
+          "type": "article",
+          "pk": "id#0fb46df20adf7730",
+          "title": "Stock market today: Nasdaq, S&P 500, Dow rise as tech recovers, while gold climbs to record high"
+        },
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        },
+        {
+          "type": "article",
+          "pk": "id#79b36bb6b3647913",
+          "title": "Gold, Silver, and Copper Are All Hitting Record Highs—Here's What's Driving the Frenzy"
+        },
+        {
+          "type": "article",
+          "pk": "id#bf43288febcdc55a",
+          "title": "What's behind the surge in gold and silver prices?"
+        },
+        {
+          "type": "article",
+          "pk": "id#ca7ed51adc88770b",
+          "title": "Bitcoin steadies near $89,000 as gold hits record and Asia stocks rise"
+        },
+        {
+          "type": "event",
+          "id": "417150",
+          "title": "fed miran speech",
+          "date": "2025-12-15"
+        },
+        {
+          "type": "event",
+          "id": "417233",
+          "title": "us president trump speech",
+          "date": "2025-12-19"
+        }
+      ],
+      "time": [
+        222317,
+        285448
+      ]
+    },
+    {
+      "id": 8,
+      "speaker": "진행자",
+      "text": "한편으로는 비트코인이 디지털 금이라는 얘기를 오랫동안 들어왔는데, 올해는 정작 진짜 금이 주인공이 된 것 같다는 시청자 질문도 많습니다. 암호화폐가 흔들리는 사이 자금이 금과 은으로 이동했다는 해석은 어느 정도 설득력이 있습니까.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#0e0f15b52a29b873",
+          "title": "Chaos, cheap money, and a collapse in crypto send gold up 69% for the year, hitting a new record high"
+        },
+        {
+          "type": "article",
+          "pk": "id#8b0990c94ff8f41f",
+          "title": "Crypto prices again muted as gold surges to new record, U.S. stocks advance"
+        },
+        {
+          "type": "article",
+          "pk": "id#ca7ed51adc88770b",
+          "title": "Bitcoin steadies near $89,000 as gold hits record and Asia stocks rise"
+        }
+      ],
+      "time": [
+        285948,
+        300359
+      ]
+    },
+    {
+      "id": 9,
+      "speaker": "해설자",
+      "text": "올해 비트코인은 12만5천달러 안팎의 사상 최고가를 찍은 뒤 8만4천달러 수준까지 3분의 1 넘게 밀렸다가 현재는 8만8천달러대에서 등락을 거듭하고 있는데, 이런 롤러코스터가 가치 저장 수단이라는 서사를 상당히 훼손했다는 지적이 나옵니다. 반면 금은 선물 기준 올해 69퍼센트가량 상승해 S&P 500의 연간 수익률을 세 배 이상 웃돌고, 오늘도 온스당 4천4백70달러 안팎의 신기록을 새로 쓰면서 같은 위험 회피 자금이 어디로 향하고 있는지 비교를 극명하게 보여주고 있습니다. 코인데스크 등 시장 참가자들은 최근 보고서에서 귀금속 랠리가 꺾이기 전까지는 암호화폐가 다시 안전자산으로 각광받기 어렵다며, 실제로 오늘도 금과 은이 사상 최고가를 경신하는 동안 비트코인과 이더리움은 글로벌 주식과 비교해 상대적으로 힘 빠진 흐름을 보였다고 평가했습니다. 결국 변동성이 너무 큰 가상자산보다는 위기 때 담보로도 쓸 수 있고 중앙은행이 직접 사들이는 실물 자산을 선호하는 쪽으로 시장의 저변 심리가 이동하고 있다는 신호로 볼 수 있습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#0e0f15b52a29b873",
+          "title": "Chaos, cheap money, and a collapse in crypto send gold up 69% for the year, hitting a new record high"
+        },
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        },
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#8b0990c94ff8f41f",
+          "title": "Crypto prices again muted as gold surges to new record, U.S. stocks advance"
+        },
+        {
+          "type": "article",
+          "pk": "id#ca7ed51adc88770b",
+          "title": "Bitcoin steadies near $89,000 as gold hits record and Asia stocks rise"
+        },
+        {
+          "type": "chart",
+          "ticker": "BTC-USD",
+          "start_date": "2025-12-01",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        300859,
+        364150
+      ]
+    },
+    {
+      "id": 10,
+      "speaker": "진행자",
+      "text": "그렇다면 금과 은이 이렇게 안전판 역할을 하는 와중에 나스닥과 인공지능 대표주들도 함께 오르는 현상은 어떻게 봐야 할까요. 투자 심리가 양극단으로 찢어져 있다는 얘기도 나오는데, 지금 자금 흐름을 한마디로 표현하면 어떤 모습입니까.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#38519d18ec7b7342",
+          "title": "Why gold and tech stocks are rallying at the same time"
+        },
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#7eb66daee32e49e1",
+          "title": "Stocks Climb With Commodities as Gold Hits Record: Markets Wrap"
+        },
+        {
+          "type": "article",
+          "pk": "id#0fb46df20adf7730",
+          "title": "Stock market today: Nasdaq, S&P 500, Dow rise as tech recovers, while gold climbs to record high"
+        }
+      ],
+      "time": [
+        364650,
+        380061
+      ]
+    },
+    {
+      "id": 11,
+      "speaker": "해설자",
+      "text": "요약하면 두려움과 탐욕이 동시에 작동하는 바벨 전략의 전형입니다. 한쪽 끝에서는 엔비디아 같은 인공지능 성장주를 담아 내년 이후 이익 성장에 베팅하면서, 다른 쪽 끝에서는 금과 은 그리고 금광주 ETF로 포트폴리오의 꼬리를 헤지하는 흐름이 병행되고 있습니다. 실제로 나스닥 지수는 올해 20퍼센트 안팎 오르는 동시에 금 가격은 70퍼센트 가까이 뛰어 팬데믹 직후 유동성 랠리 때처럼 안전자산과 위험자산이 함께 올라가는 이례적인 동행 장세가 재현되고 있습니다. 한편에서는 원자재 스트래티지스트들이 1979년 랠리 이후 1980년대 초 금값이 절반 가까이 조정받았던 전례를 들며 지금과 같은 과열 구간에서는 수익 실현도 병행해야 한다고 경고하고 있기 때문에, 투자자 입장에서는 귀금속을 경기와 정치 리스크에 대한 보험처럼 활용하되 레버리지를 과도하게 키우지 않는 균형 감각이 필요한 시점으로 보입니다. 결국 오늘 사상 최고 금값은 단기 이벤트라기보다 달러 약세와 완화적 연준, 지정학적 긴장, 그리고 암호화폐에 대한 신뢰 흔들림이 한꺼번에 겹친 결과라는 점을 기억해 두시고, 연말 이후에도 이 네 가지 축이 어떻게 변하는지를 함께 보셔야 할 것 같습니다. 그리고 이 네 가지 축 가운데 완화적 통화정책과 성장 기대는 다시 AI와 빅테크 쪽으로 이어지기 때문에, 이제는 그 흐름도 함께 짚어볼 필요가 있습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#38519d18ec7b7342",
+          "title": "Why gold and tech stocks are rallying at the same time"
+        },
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        },
+        {
+          "type": "article",
+          "pk": "id#0e0f15b52a29b873",
+          "title": "Chaos, cheap money, and a collapse in crypto send gold up 69% for the year, hitting a new record high"
+        },
+        {
+          "type": "article",
+          "pk": "id#c83cce13144d7987",
+          "title": "Analysis-Dire year for dollar has little light at end of tunnel in 2026"
+        },
+        {
+          "type": "article",
+          "pk": "id#9e4894ca63cd8d66",
+          "title": "Gold Rises to Record High on Rate-Cut Bets and Venezuela Tension"
+        },
+        {
+          "type": "article",
+          "pk": "id#1c133280558a83d7",
+          "title": "Gold hits new record as Trump ramps up pressure on Venezuela"
+        },
+        {
+          "type": "article",
+          "pk": "id#8b0990c94ff8f41f",
+          "title": "Crypto prices again muted as gold surges to new record, U.S. stocks advance"
+        },
+        {
+          "type": "article",
+          "pk": "id#bf43288febcdc55a",
+          "title": "What's behind the surge in gold and silver prices?"
+        },
+        {
+          "type": "chart",
+          "ticker": "GDX",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        380561,
+        461692
+      ]
+    },
+    {
+      "id": 12,
+      "speaker": "진행자",
+      "text": "지금까지는 안전판 역할을 해온 금과 은 이야기를 중심으로 살펴봤다면, 반대편에서는 말씀하신 대로 성장 베팅의 축인 인공지능과 빅테크가 시장을 이끌고 있는데요. 앞서 오늘 나스닥이 사흘 연속 오르고, 그 뒤에는 인공지능과 빅테크 강세가 있었던 점을 짚어주셨으니까, 이번에는 특히 엔비디아와 알파벳 이야기를 중심으로 조금 더 들어가 보겠습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "chart",
+          "ticker": "^IXIC",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        462192,
+        487602
+      ]
+    },
+    {
+      "id": 13,
+      "speaker": "해설자",
+      "text": "지수로 보면 나스닥 지수가 전일 대비 약 0.5퍼센트 오른 가운데, 그 안에서는 엔비디아가 대략 1.5퍼센트, 알파벳 클래스 C가 1퍼센트에 못 미치는 상승으로 AI 대표주답게 흐름을 주도했습니다. 특히 금리 인하 기대 속에서 AI와 반도체, 데이터센터 관련주에 다시 매수가 유입되면서, 기술주 중심의 나스닥이 S&P 500보다 상대적으로 강한 모습을 보였고요. 이렇게 되자 월요일 아시아 시장에서도 일본과 한국의 반도체, AI 수혜주들이 2퍼센트 안팎으로 동반 상승하는 등, 월가발 AI 랠리가 글로벌로 번지는 양상도 확인됐습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#a6aea279cab6d9d6",
+          "title": "Asian shares advance, yen slips after AI stocks push higher on Wall Street"
+        },
+        {
+          "type": "chart",
+          "ticker": "NVDA",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "GOOG",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "^IXIC",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        488102,
+        526433
+      ]
+    },
+    {
+      "id": 14,
+      "speaker": "진행자",
+      "text": "엔비디아는 올해만 시가총액 4조, 5조 달러를 넘나들었던 주식인데도 이런 뉴스에 여전히 크게 반응하고 있습니다. 오늘은 특히 중국향 H200 고성능 칩 출하를 내년 초 재개할 수 있을지에 대한 기대가 부각됐다는데, 이 이슈부터 정리해 주시죠.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#007b41c540aa7307",
+          "title": "Nvidia dominated the headlines in 2025 — these were its 15 biggest events of the year"
+        },
+        {
+          "type": "article",
+          "pk": "id#58d7819b29889c83",
+          "title": "Exclusive-Nvidia aims to begin H200 chip shipments to China by mid-February, sources say"
+        }
+      ],
+      "time": [
+        526933,
+        543304
+      ]
+    },
+    {
+      "id": 15,
+      "speaker": "해설자",
+      "text": "오늘 나온 보도에 따르면 엔비디아는 내년 춘절 이전, 그러니까 2월 중순쯤을 목표로 H200 인공지능 칩을 중국에 처음으로 출하하는 계획을 중국 고객사들에게 전달한 상태입니다. 초기에는 보유 재고를 활용해 모듈 기준으로 5천에서 1만 개, 칩 기준으로 수만 개 수준을 공급하는 그림이고, 2026년 2분기부터는 추가 생산능력에 대한 주문을 받겠다는 청사진도 제시했습니다. 다만 이는 중국 정부의 구매 승인과 미국 행정부의 라이선스, 그리고 현재 논의되고 있는 25퍼센트 수출 수수료 부과 등 정책 변수에 전적으로 달려 있어서, 허가가 나면 추가 매출이 열리고 막히면 판매가 중단되는 전형적인 이원적 리스크를 안고 있습니다. 올해 내내 행정부와 의회를 상대로 수출 규제 완화 로비를 벌여 온 엔비디아가 중국 판매 재개를 위한 우군을 상당 부분 확보했다는 점이 확인된 만큼, 투자자 입장에서는 여전히 강한 AI 칩 수요와 함께 정책 환경이 단기 주가 모멘텀을 좌우하는 구도가 이어질 가능성이 큽니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#58d7819b29889c83",
+          "title": "Exclusive-Nvidia aims to begin H200 chip shipments to China by mid-February, sources say"
+        },
+        {
+          "type": "article",
+          "pk": "id#2f20baa41537bd0b",
+          "title": "Nvidia Gains, Hospitals Hurt: Congress Winners and Losers"
+        },
+        {
+          "type": "article",
+          "pk": "id#007b41c540aa7307",
+          "title": "Nvidia dominated the headlines in 2025 — these were its 15 biggest events of the year"
+        }
+      ],
+      "time": [
+        543804,
+        600295
+      ]
+    },
+    {
+      "id": 16,
+      "speaker": "진행자",
+      "text": "결국 엔비디아 입장에서는 막혀 있던 중국 수요로 가는 통로가 조금씩 다시 열리는 그림인데요. 수요 측면에서는 알파벳이 데이터센터 전력 인프라 업체를 통째로 인수하겠다고 나선 점도 눈에 띄는데, 이 딜이 AI 투자 사이클에서 왜 중요한 신호로 읽히는지 궁금합니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#7dc44f830133144d",
+          "title": "Google's parent buys data center energy specialist Intersect for $4.75 billion to help power AI"
+        },
+        {
+          "type": "article",
+          "pk": "id#ddaeb647540b3254",
+          "title": "Alphabet to buy data center firm Intersect in $4.75 billion deal amid AI push"
+        },
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        }
+      ],
+      "time": [
+        600795,
+        618766
+      ]
+    },
+    {
+      "id": 17,
+      "speaker": "해설자",
+      "text": "알파벳은 오늘 미국 데이터센터와 에너지 인프라 업체 인터섹트를 현금 47억 5천만 달러에, 부채 인수까지 포함해 통째로 사들이겠다고 밝혔습니다. 이 회사가 보유한 개발 중이거나 건설 중인 프로젝트 규모가 수 기가와트에 달하는데, 알파벳은 이를 통해 미국 곳곳에 지을 인공지능 데이터센터가 필요로 하는 막대한 전력을 보다 빠르고 안정적으로 확보하겠다는 구상입니다. 실제로 알파벳은 이번 인수를 두고 풍부하고 안정적이며 저렴한 전력을 확보해 AI 데이터센터를 지으면서도 일반 전기요금 인상 부담을 줄이겠다는 점을 강조했고, 데이터센터를 공장에 비유하며 AI 공장을 뒷받침하는 에너지 회사까지 직접 품는 모양새입니다. 이 뉴스에 알파벳 주가는 소폭이나마 올랐고, 인터섹트의 주요 고객인 퍼스트 솔라 같은 태양광 기업 주가가 6퍼센트 안팎 급등하는 등, AI 경쟁이 이제는 칩과 소프트웨어를 넘어 전력과 설비를 둘러싼 인프라 투자 싸움으로 확대되고 있음을 시장이 반영하고 있습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#7dc44f830133144d",
+          "title": "Google's parent buys data center energy specialist Intersect for $4.75 billion to help power AI"
+        },
+        {
+          "type": "article",
+          "pk": "id#7c51feb8073b5e9f",
+          "title": "Google Wants More Energy to Fuel AI. It's Buying This Company to Help Power Its Data Centers."
+        },
+        {
+          "type": "article",
+          "pk": "id#c3731e593aa84170",
+          "title": "Why Are First Solar (FSLR) Shares Soaring Today"
+        }
+      ],
+      "time": [
+        619266,
+        683037
+      ]
+    },
+    {
+      "id": 18,
+      "speaker": "진행자",
+      "text": "요약하면 금리 인하 기대라는 큰 물줄기 속에서도, 여전히 AI 인프라에는 실물 투자가 거세게 이어지고 있다는 얘기로 들립니다. 다만 AI 버블 우려와 이 랠리를 놓칠까 하는 불안이 동시에 존재한다는 분석도 있었는데, 이런 가운데 투자자들은 어떤 점을 특히 유의해서 볼 필요가 있을까요.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#81af9560bd574f27",
+          "title": "Advisors Target Diversification in 2026 Strategies as Mag 7 Risk Rises"
+        }
+      ],
+      "time": [
+        683537,
+        704188
+      ]
+    },
+    {
+      "id": 19,
+      "speaker": "해설자",
+      "text": "월가에서는 올해 내내 AI 관련 대형주와 나머지 종목 간 괴리가 컸고, 소수 빅테크에 의존한 이런 좁은 리더십이 충격이 왔을 때 변동성을 키울 수 있다는 경고가 꾸준히 나왔습니다. 동시에 AI 랠리가 아직 끝나지 않았다는 기대와 고점 부담, 이른바 놓칠까 두려운 심리 사이에서 줄다리기가 이어지면서, 내년에도 10퍼센트 안팎의 조정과 빠른 반등이 반복될 수 있다는 전망도 제기되고 있습니다. 이런 배경에서 일부 글로벌 자문사들은 미국 증시에 대해 긍정적인 시각을 유지하되, AI 빅테크 편중을 줄이고 헬스케어와 유틸리티, 금융 같은 다른 섹터로 분산해 리스크를 관리하라고 조언하고 있습니다. 정리하면 오늘처럼 엔비디아 칩 수출과 알파벳의 전력 인프라 인수처럼 AI 생태계 전반에 실제 투자와 수요가 확인되는지는 계속 체크하되, 정책 리스크와 집중도 리스크를 감안해 포트폴리오 안에서 AI 빅테크의 비중과 역할을 한 번 점검해 볼 시점입니다. 그리고 오늘 시장을 움직인 또 다른 축이었던 미디어 인수전이 투자 심리에 어떤 영향을 줬는지도 함께 볼 필요가 있습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#81af9560bd574f27",
+          "title": "Advisors Target Diversification in 2026 Strategies as Mag 7 Risk Rises"
+        }
+      ],
+      "time": [
+        704688,
+        766339
+      ]
+    },
+    {
+      "id": 20,
+      "speaker": "진행자",
+      "text": "성장주와 안전자산이 함께 움직이는 가운데, 말씀하신 세 번째 축이 바로 할리우드 대형 딜이었죠. 앞서 오늘 장을 움직인 세 가지 축 가운데 하나로 워너 브라더스 디스커버리를 둘러싼 인수전 이야기를 짚어주셨는데요. 크리스마스 직전에 갑자기 미디어주들이 들썩인 배경부터, 오늘 무슨 일이 있었는지 전체 그림을 먼저 정리해 주시죠.",
+      "sources": [],
+      "time": [
+        766839,
+        788730
+      ]
+    },
+    {
+      "id": 21,
+      "speaker": "해설자",
+      "text": "기본 구도는 워너 브라더스 디스커버리를 누구 품에 안길 것이냐, 넷플릭스와 파라마운트 스카이댄스의 싸움입니다. 워너 브라더스 이사회는 이달 초 스튜디오와 스트리밍 자산만 떼어가는 넷플릭스의 현금과 주식 혼합 제안을 우선 선택했고, 여기에 대해 파라마운트 스카이댄스가 회사 전체를 주당 30달러, 총 1천84억 달러 수준의 현금으로 사겠다고 나서면서 적대적 인수전으로 번졌습니다. 문제는 파라마운트 측 자금 조달의 신뢰성이었는데, 오늘 오라클 창업자인 래리 엘리슨이 자기 재산을 담보로 404억 달러 규모의 지분 자금을 직접 보증하겠다고 나서면서 판이 급격히 달라졌습니다. 엘리슨 가족 신탁이 보유한 오라클 주식 11억6천만 주를 공개하고 신탁을 철회하지 않겠다고 약속하면서, 워너 브라더스가 지적해온 자금 불확실성 문제를 정면으로 겨냥한 조치였습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#8948fa7578f8a538",
+          "title": "Paramount’s new, hostile offer to Warner Bros. Discovery: Larry Ellison will personally guarantee $40 billion"
+        },
+        {
+          "type": "article",
+          "pk": "id#43cc635a9e26774a",
+          "title": "Paramount renews bid for Warner Bros, ensuring $40 billion Larry Ellison backing"
+        },
+        {
+          "type": "article",
+          "pk": "id#918659bbfb410c78",
+          "title": "Larry Ellison offers $40bn in bid to revive Paramount’s Warner Bros takeover"
+        },
+        {
+          "type": "article",
+          "pk": "id#25a446dfd2e9fe6c",
+          "title": "Billionaire Larry Ellison comes to his son’s rescue, agreeing to personally guarantee over $40 billion to finance Paramount’s bid for Warner Bros."
+        },
+        {
+          "type": "article",
+          "pk": "id#15750b2c5e20d7cf",
+          "title": "Larry Ellison pledges $40 billion personal guarantee for Paramount's Warner Bros. bid"
+        }
+      ],
+      "time": [
+        789230,
+        841361
+      ]
+    },
+    {
+      "id": 22,
+      "speaker": "진행자",
+      "text": "그럼 시장은 어떻게 반응했는지 궁금합니다. 지수는 조용했지만 워너 브라더스 디스커버리와 파라마운트 스카이댄스, 그리고 경쟁자인 넷플릭스 주가는 오늘 하루 어떻게 움직였나요.",
+      "sources": [],
+      "time": [
+        841861,
+        853112
+      ]
+    },
+    {
+      "id": 23,
+      "speaker": "해설자",
+      "text": "워너 브라더스 디스커버리는 장중 4퍼센트 안팎까지 치솟았다가 결국 전일 대비 약 3퍼센트 오른 28달러대 후반에서 마감했고, 파라마운트 스카이댄스도 초반 급등 이후 4퍼센트 안팎 상승률로 13달러대 중반에 자리를 잡았습니다. 투자자 입장에서는 엘리슨의 보증으로 파라마운트 제안의 실현 가능성이 높아졌다고 보고 두 종목 모두를 사들이면서, 누가 승자가 되든 워너 브라더스 자산 가치가 더 부각될 것이라는 쪽에 베팅한 모습입니다. 반대로 넷플릭스는 오전 한때 1퍼센트 정도 밀리며 약보합권에 머물렀고, 커뮤니케이션 섹터 상장지수펀드 전체는 소폭 상승에 그쳐, 오늘 움직임이 지수보다는 특정 종목과 인수전 이슈에 집중된 장이었다고 정리할 수 있겠습니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#a2dd02d49729fe69",
+          "title": "Why Warner Bros. Discovery (WBD) Stock Is Trading Up Today"
+        },
+        {
+          "type": "article",
+          "pk": "id#fb7c381cc86413d0",
+          "title": "Paramount (PSKY) Stock Is Up, What You Need To Know"
+        },
+        {
+          "type": "article",
+          "pk": "id#c3f2c94a4fbf8bb2",
+          "title": "Larry Ellison Steps Up His Bid to Help Paramount Pull Warner Bros. From Netflix"
+        },
+        {
+          "type": "chart",
+          "ticker": "WBD",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "PSKY",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "NFLX",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        },
+        {
+          "type": "chart",
+          "ticker": "XLC",
+          "start_date": "2025-12-19",
+          "end_date": "2025-12-22"
+        }
+      ],
+      "time": [
+        853612,
+        899063
+      ]
+    },
+    {
+      "id": 24,
+      "speaker": "진행자",
+      "text": "주가 반응만 보면 워너 브라더스 자산이 그만큼 귀해졌다는 메시지로도 읽히는데요. 넷플릭스 딜과 파라마운트 딜의 구조 차이, 그리고 최근 시세까지 감안하면 이번 인수전이 미디어 자산 가치 재평가에 어떤 신호를 주고 있다고 보세요.",
+      "sources": [],
+      "time": [
+        899563,
+        916574
+      ]
+    },
+    {
+      "id": 25,
+      "speaker": "해설자",
+      "text": "넷플릭스는 스튜디오와 HBO를 포함한 스트리밍 자산만 떼어오는 구조로, 주당 27달러 중반 수준에 전체 기업 가치를 800억 달러대 초반으로 책정했고, 워너 브라더스의 케이블 네트워크는 별도 회사로 분리하는 방안을 택했습니다. 반면 파라마운트는 CNN 같은 네트워크까지 통째로 인수하는 조건으로 1천84억 달러를 제시했기 때문에, 단순 가격 차이를 넘어 전통 미디어 자산까지 붙여서 하나의 글로벌 콘텐츠 플랫폼으로 키우겠다는 구상입니다. 올해 들어 이미 워너 브라더스 디스커버리 주가는 160퍼센트 이상, 파라마운트 스카이댄스도 20퍼센트대 상승을 기록하며 인수전 기대를 선반영해 왔는데, 오늘 엘리슨의 보증으로 그 프리미엄이 다시 한 번 확인됐다고 볼 수 있습니다. 결국 양쪽 제안을 통해 영화 스튜디오와 히트 시리즈 라이브러리, 스포츠와 뉴스 네트워크까지 아우르는 할리우드 IP 묶음이 얼마나 희소한 자산인지를 시장이 가격으로 다시 써 내려가고 있는 셈입니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#43cc635a9e26774a",
+          "title": "Paramount renews bid for Warner Bros, ensuring $40 billion Larry Ellison backing"
+        },
+        {
+          "type": "article",
+          "pk": "id#364c2b0db3f35238",
+          "title": "Oracle's Larry Ellison agrees to backstop $40.4 billion in financing for Paramount acquisition of Warner Bros."
+        },
+        {
+          "type": "article",
+          "pk": "id#a2dd02d49729fe69",
+          "title": "Why Warner Bros. Discovery (WBD) Stock Is Trading Up Today"
+        },
+        {
+          "type": "article",
+          "pk": "id#fb7c381cc86413d0",
+          "title": "Paramount (PSKY) Stock Is Up, What You Need To Know"
+        }
+      ],
+      "time": [
+        917074,
+        971965
+      ]
+    },
+    {
+      "id": 26,
+      "speaker": "진행자",
+      "text": "말씀하신 대로 가격과 구조만 봐도 딜의 방향성이 상당히 다르네요. 한편으로는 넷플릭스가 590억 달러 규모 브리지론을 재조정하고, 파라마운트 쪽은 엘리슨이 404억 달러를 개인 보증하는 등 크레딧 시장이 이 딜을 어떻게 뒷받침하고 있는지도 궁금합니다.",
+      "sources": [],
+      "time": [
+        972465,
+        989836
+      ]
+    },
+    {
+      "id": 27,
+      "speaker": "해설자",
+      "text": "넷플릭스는 워너 브라더스 인수를 위해 받아 둔 590억 달러 브리지론 가운데 일부를 50억 달러짜리 리볼빙 크레딧과 2년, 3년 만기의 100억 달러 대기성 대출 두 개로 갈아타면서, 최대 250억 달러까지 은행 자금을 새로 확보했습니다. 투자등급 신용도를 바탕으로 이후 회사채 시장에서 나머지 브리지론을 순차적으로 상환하겠다는 구상이고, 파라마운트 쪽은 엘리슨의 개인 보증과 중동 국부펀드 자금이 결합된 구조라 규제 리스크는 크지만 자금 자체의 두께는 분명해진 상황입니다. 두 제안을 합치면 수백억 달러대의 신규 대출과 채권 발행이 걸려 있는데, 은행들이 이런 초대형 미디어 딜에 다시 적극적으로 커밋을 쌓고 있다는 점이 크레딧 시장 전반에는 심리적 지지대 역할을 하고 있습니다. 다만 넷플릭스 딜은 반독점 이슈와 정치권의 견제, 파라마운트 딜은 외국 자본과 지배 구조 문제 등 각기 다른 규제 변수를 안고 있기 때문에, 워너 브라더스 주가가 오늘 의미 있게 오르긴 했지만 단번에 인수 가격을 향해 달려가지는 못한 것도 이런 불확실성을 반영한 결과로 보입니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#445178a7329abd8f",
+          "title": "Netflix Refinances Part of $59 Billion Loan for Warner Bros. Bid"
+        },
+        {
+          "type": "article",
+          "pk": "id#e8df4036559e49e4",
+          "title": "Netflix Lines Up $25 Billion in Bank Financing for Warner Bros. Deal"
+        },
+        {
+          "type": "article",
+          "pk": "id#364c2b0db3f35238",
+          "title": "Oracle's Larry Ellison agrees to backstop $40.4 billion in financing for Paramount acquisition of Warner Bros."
+        },
+        {
+          "type": "article",
+          "pk": "id#09d07503cc4a656f",
+          "title": "Ellison steps in with personal guarantee as Paramount fights for Warner Bros"
+        },
+        {
+          "type": "article",
+          "pk": "id#66b801ce787338eb",
+          "title": "Warner Bros bidding war and red hot M&A market has dealmakers working through holidays"
+        }
+      ],
+      "time": [
+        990336,
+        1051547
+      ]
+    },
+    {
+      "id": 28,
+      "speaker": "진행자",
+      "text": "이제 정리를 조금 해 보겠습니다. 오늘 시장은 금과 은이 사상 최고가를 다시 쓰는 가운데도 AI와 빅테크, 그리고 할리우드 인수전까지 한꺼번에 달리면서, 두려움과 탐욕이 공존하는 하루였다고 볼 수 있을 텐데요, 앞에서 짚어본 세 가지 흐름을 투자자 관점에서 다시 한 번 핵심만 짚어 주시죠.",
+      "sources": [],
+      "time": [
+        1052547,
+        1072358
+      ]
+    },
+    {
+      "id": 29,
+      "speaker": "해설자",
+      "text": "오늘의 큰 그림은 금리 인하와 달러 약세, 지정학 긴장이 겹치면서 금과 은이 1979년 이후 최고 수준의 연간 랠리를 이어가는 가운데, 동시에 엔비디아와 알파벳을 중심으로 한 AI와 빅테크가 나스닥을 끌어올리고, 여기에 워너 브라더스를 둘러싼 넷플릭스와 파라마운트 스카이댄스의 인수전이 미디어주 전반의 재평가를 자극한 조합이었습니다. 안전자산 쪽에서는 연준 추가 인하 기대와 달러 약세, 베네수엘라 원유 봉쇄와 우크라이나 전황 같은 지정학 리스크, 그리고 암호화폐 변동성에 대한 피로가 겹치면서 금과 은, 금광주 ETF로 자금이 몰렸고요. 성장주 쪽에서는 엔비디아의 중국향 H200 칩 출하 재개 기대와 알파벳의 데이터센터 전력 인프라 업체 인수 소식이 AI 투자 사이클의 실물 뒷받침을 확인해 주면서, 기술주 강세가 글로벌로 번지는 모습이었습니다. 동시에 래리 엘리슨이 404억 달러 규모를 개인 보증하며 파라마운트의 워너 브라더스 인수 의지를 재확인한 덕에 워너 브라더스와 파라마운트 주가가 동반 상승했고, 이 과정에서 할리우드 스튜디오와 스트리밍, 뉴스와 스포츠 네트워크를 묶은 미디어 자산의 희소성이 가격으로 다시 한 번 부각됐다는 점이 오늘 장의 특징으로 정리됩니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#63d0fead8de5be90",
+          "title": "Stock market today: Dow, S&P 500, Nasdaq rise for third straight day, gold hits record to extend 2025 rally"
+        },
+        {
+          "type": "article",
+          "pk": "id#246791658b5651f9",
+          "title": "Gold, silver hit record highs as precious metals pace toward best year since 1979"
+        },
+        {
+          "type": "article",
+          "pk": "id#58d7819b29889c83",
+          "title": "Exclusive-Nvidia aims to begin H200 chip shipments to China by mid-February, sources say"
+        },
+        {
+          "type": "article",
+          "pk": "id#7dc44f830133144d",
+          "title": "Google's parent buys data center energy specialist Intersect for $4.75 billion to help power AI"
+        },
+        {
+          "type": "article",
+          "pk": "id#8948fa7578f8a538",
+          "title": "Paramount’s new, hostile offer to Warner Bros. Discovery: Larry Ellison will personally guarantee $40 billion"
+        }
+      ],
+      "time": [
+        1072858,
+        1151909
+      ]
+    },
+    {
+      "id": 30,
+      "speaker": "진행자",
+      "text": "이제는 시선을 앞으로 돌려 보죠. 연말과 내년 초까지 이어질 일정 가운데, 지금 시장이 금리와 성장, 그리고 연준 스탠스를 가늠하는 데 꼭 체크해야 할 포인트들이 뭐가 있을지 궁금해하시는 분들이 많은데요.",
+      "sources": [],
+      "time": [
+        1152409,
+        1166820
+      ]
+    },
+    {
+      "id": 31,
+      "speaker": "해설자",
+      "text": "가장 가까운 일정으로는 내일 밤에 발표될 미국 4분기 국내총생산 성장률과 물가 지표 묶음을 먼저 보셔야 합니다. 12월 23일 오전 8시 30분에 나오는 분기 국내총생산 성장률은 전 분기 3.8퍼센트에서 4.3퍼센트로 속도가 더 붙은 것으로 집계됐고, 같은 시간에 발표되는 근원 개인소비지출 물가는 전 분기 2.6퍼센트에서 2.9퍼센트로 올라와 있어 성장과 물가의 조합을 같이 봐야 하는 구간입니다. 성장률이 견조한데도 근원 물가가 시장 예상에 비해 빠르게 내려오지 않으면, 연준의 추가 인하 속도를 시장이 다시 조정할 수 있고 그때 장기 금리와 달러, 금값 그리고 성장주의 밸류에이션이 함께 영향을 받을 수 있기 때문입니다.",
+      "sources": [
+        {
+          "type": "event",
+          "id": "387585",
+          "title": "gdp growth rate qoq",
+          "date": "2025-12-23"
+        },
+        {
+          "type": "event",
+          "id": "387575",
+          "title": "core pce prices qoq",
+          "date": "2025-12-23"
+        }
+      ],
+      "time": [
+        1167320,
+        1211211
+      ]
+    },
+    {
+      "id": 32,
+      "speaker": "진행자",
+      "text": "연말로 갈수록 거래는 얇아지지만, 말씀하신 성장과 물가, 그리고 연준의 생각은 오히려 더 중요해지는 시기인데요. 이와 관련해서 투자자들이 연준의 시그널을 다시 읽어볼 만한 일정이 있다면 어떤 것들이 있을까요.",
+      "sources": [],
+      "time": [
+        1211711,
+        1226682
+      ]
+    },
+    {
+      "id": 33,
+      "speaker": "해설자",
+      "text": "12월 30일 새벽에는 올해 마지막 연방공개시장위원회 회의록이 나옵니다. 한국 시간으로는 연말 연휴 직전인데, 12월 30일 오후 2시에 공개되는 이 회의록에서 위원들이 내년 추가 인하를 얼마나 자신 있게 보고 있는지, 물가 하락세를 얼마나 신뢰하는지가 드러나기 때문에, 금리 선물과 장기 국채 금리, 그리고 오늘처럼 금값과 성장주를 동시에 끌어올린 완화 기대가 얼마나 지속 가능한지 가늠할 수 있는 자료가 될 것입니다. 그리고 내년 1월 28일에는 올해 첫 연방준비제도 기준금리 결정과 기자회견이 예정돼 있는데, 현재 시장은 금리를 3.75퍼센트 수준에서 동결할 것으로 보면서도 추가 인하 가능성을 가격에 상당 부분 반영해 둔 상태입니다. 그 회의에서 연준이 경기 둔화를 더 우려하며 인하 쪽으로 무게를 두느냐, 아니면 여전히 물가를 경계하며 속도 조절을 시사하느냐에 따라, 안전자산과 AI 성장주, 그리고 달러와 국채 수익률의 방향성이 다시 한 번 재조정될 수 있습니다.",
+      "sources": [
+        {
+          "type": "event",
+          "id": "391129",
+          "title": "fomc minutes",
+          "date": "2025-12-30"
+        },
+        {
+          "type": "event",
+          "id": "390597",
+          "title": "fed interest rate decision",
+          "date": "2026-01-28"
+        },
+        {
+          "type": "event",
+          "id": "390598",
+          "title": "fed press conference",
+          "date": "2026-01-28"
+        }
+      ],
+      "time": [
+        1227182,
+        1284833
+      ]
+    },
+    {
+      "id": 34,
+      "speaker": "진행자",
+      "text": "결국 앞으로도 성장과 물가, 그리고 연준이 금리 인하를 얼마나 이어갈지가 금값과 AI, 미디어 인수전까지 묶어서 시장 전체의 줄기를 좌우하는 셈인데요. 연말을 앞두고 포트폴리오를 점검하실 투자자 분들께, 오늘 장을 정리하는 한마디와 함께 어떤 점을 특히 유의하셔야 할지 마지막 조언을 부탁드립니다.",
+      "sources": [],
+      "time": [
+        1285333,
+        1308104
+      ]
+    },
+    {
+      "id": 35,
+      "speaker": "해설자",
+      "text": "올해 미국 시장은 금과 은 같은 안전자산, 엔비디아와 알파벳 같은 AI 성장주, 그리고 워너 브라더스 인수전을 둘러싼 미디어주까지 세 갈래가 동시에 강세를 보이는, 보기 드문 동행의 한 해였습니다. 이런 환경에서는 어느 한쪽에만 베팅하기보다는, 수익을 낸 자산에서는 일부 이익을 확정하면서 금과 은을 경기와 지정학 리스크에 대한 보험으로, AI와 빅테크는 포트폴리오의 성장 엔진으로 적정 비중을 나눠 담는 식의 균형 잡힌 접근이 중요해 보입니다. 특히 레버리지를 과도하게 키우기보다는 내년 성장률과 근원 물가, 연준의 실제 행동이 지금 시장이 기대하는 궤적과 얼마나 어긋나는지를 차분히 확인해 가면서, 변동성이 커질 때도 버틸 수 있는 구조로 계좌를 정비해 두시는 게 연말에 할 수 있는 가장 현실적인 리스크 관리일 것입니다.",
+      "sources": [
+        {
+          "type": "article",
+          "pk": "id#38519d18ec7b7342",
+          "title": "Why gold and tech stocks are rallying at the same time"
+        },
+        {
+          "type": "article",
+          "pk": "id#81af9560bd574f27",
+          "title": "Advisors Target Diversification in 2026 Strategies as Mag 7 Risk Rises"
+        }
+      ],
+      "time": [
+        1308604,
+        1355134
+      ]
+    },
+    {
+      "id": 36,
+      "speaker": "진행자",
+      "text": "네, 오늘도 안전자산과 성장주, 그리고 인수전까지 시장을 움직인 굵직한 흐름과 앞으로 체크해야 할 일정들을 함께 짚어봤습니다. 지금까지 12월 22일 장마감 브리핑이었습니다, 함께해 주신 여러분 고맙습니다.",
+      "sources": [],
+      "time": [
+        1355634,
+        1370725
+      ]
+    }
+  ]
+}
