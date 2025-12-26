@@ -26,6 +26,8 @@ from langgraph.graph import END, START, StateGraph
 from langsmith.run_helpers import traceable
 from langsmith.utils import ContextThreadPoolExecutor
 
+from podcast_db import get_default_db_path, update_tts_row, utc_iso_from_timestamp
+
 from .utils.gemini_tts import gemini_generate_tts_traced, get_model_path
 from .utils.tracing import configure_tracing
 
@@ -840,6 +842,22 @@ def write_outputs_node(state: TTSState) -> TTSState:
     if root_out.exists():
         logger.warning("날짜 JSON 파일이 이미 존재합니다. 덮어씁니다: %s", root_out)
     root_out.write_text(json.dumps(script_obj, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    nutshell = script_obj.get("nutshell")
+    if not isinstance(nutshell, str):
+        nutshell = None
+    user_tickers = script_obj.get("user_tickers")
+    if not isinstance(user_tickers, list) or any(not isinstance(t, str) for t in user_tickers):
+        user_tickers = None
+
+    update_tts_row(
+        db_path=get_default_db_path(ROOT_DIR),
+        date=date,
+        final_saved_at=utc_iso_from_timestamp(out_wav.stat().st_mtime),
+        nutshell=nutshell,
+        user_tickers=user_tickers,
+        script_saved_at=utc_iso_from_timestamp(script_path.stat().st_mtime),
+    )
 
     return {"date": date, "out_wav": str(out_wav)}
 

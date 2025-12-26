@@ -23,6 +23,8 @@ from typing import Any, Dict, List, Literal, TypedDict, Union
 from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
 
+from podcast_db import get_default_db_path, upsert_script_row, utc_iso_from_timestamp
+
 # OpeningAgent 모듈 import 경로 설정
 ROOT = Path(__file__).parent
 OPENING_AGENT_ROOT = ROOT / "OpeningAgent"
@@ -398,6 +400,15 @@ def main() -> None:
     podcast_dir.mkdir(parents=True, exist_ok=True)
     podcast_script_path = podcast_dir / "script.json"
     podcast_script_path.write_text(final_json, encoding="utf-8")
+
+    # Podcast index DB 업데이트
+    upsert_script_row(
+        db_path=get_default_db_path(ROOT),
+        date=date_yyyymmdd,
+        nutshell=str(final_payload.get("nutshell") or ""),
+        user_tickers=final_payload.get("user_tickers") or [],
+        script_saved_at=utc_iso_from_timestamp(podcast_script_path.stat().st_mtime),
+    )
 
     print(f"\n=== Saved Final Output ===\n- {podcast_script_path}")
     

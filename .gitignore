@@ -4,3 +4,4 @@ ChartAgent/
 .pytest_cache/
 tmp/
 closinglegacy/
+Podcast/podcast.db*
