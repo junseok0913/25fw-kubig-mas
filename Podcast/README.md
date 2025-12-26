@@ -30,5 +30,5 @@
   - `nutshell`: `TEXT`
   - `user_tickers`: `TEXT` (JSON string)
   - `script_saved_at`: `TEXT` (UTC ISO8601)
-  - `tts_done`: `INTEGER` (0/1)
+  - `tts_done`: `BOOLEAN` (TRUE/FALSE)
   - `final_saved_at`: `TEXT` (UTC ISO8601)
