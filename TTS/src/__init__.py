@@ -1,2 +1,1 @@
-"""TTS pipeline package."""
-
+"""TTS 파이프라인 소스 패키지 (@TTS/src)."""

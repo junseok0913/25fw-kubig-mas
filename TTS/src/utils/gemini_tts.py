@@ -1,4 +1,7 @@
-"""Gemini multi-speaker TTS 호출 유틸."""
+"""Gemini multi-speaker TTS 호출 유틸.
+
+Gemini `generateContent` API를 사용해 turn 단위 오디오(bytes)를 생성한다.
+"""
 
 from __future__ import annotations
 

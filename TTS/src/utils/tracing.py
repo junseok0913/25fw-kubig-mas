@@ -1,4 +1,7 @@
-"""LangSmith tracing 설정 유틸."""
+"""LangSmith tracing 설정 유틸.
+
+환경변수(`LANGSMITH_*`)만 사용해 트레이싱 설정을 확인/보정하고, 로그에 현재 상태를 남긴다.
+"""
 
 from __future__ import annotations
 
@@ -49,4 +52,3 @@ def configure_tracing(logger: logging.Logger | None = None) -> None:
         log.warning("LANGSMITH_TRACING_V2가 true가 아니면 트레이싱이 기록되지 않을 수 있습니다.")
 
     _CONFIGURED = True
-
