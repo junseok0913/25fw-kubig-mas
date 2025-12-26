@@ -12,6 +12,7 @@
 ### `Podcast/{date}/script.json`
 최소 요구 구조(요약):
 - `scripts[]`: 각 항목은 `id`(int), `speaker`("진행자"|"해설자"), `text`(str)를 포함
+- 선택: `nutshell` (오늘 장 한마디, string)
 - 선택: `chapter[]` (orchestrator가 채우는 챕터 범위)
   - `{ "name": "opening"|"theme"|"closing", "start_id": int, "end_id": int }`
 
@@ -110,4 +111,3 @@ LangSmith 업로드 용량 제한을 피하기 위해:
   - `Podcast/{date}/{date}.wav`
   - `Podcast/{date}/tts/timeline.json`
   - `Podcast/{date}/{date}.json`
-

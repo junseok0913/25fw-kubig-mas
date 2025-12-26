@@ -6,7 +6,7 @@
 
 ## 디렉터리 구조
 - `Podcast/{date}/`
-  - `script.json`: 최종 산출물(JSON) — `date`, `user_tickers`, `scripts`
+  - `script.json`: 최종 산출물(JSON) — `date`, `nutshell`, `user_tickers`, `chapter`, `scripts`
   - `tts/`: TTS 파이프라인 실행 결과(턴 오디오, 타임라인, final 오디오 등)
 
 ## 생성/갱신 규칙
@@ -16,5 +16,7 @@
 ## 스키마(요약)
 - `script.json`
   - `date`: `"YYYYMMDD"` (ET 기준)
+  - `nutshell`: `string` (오늘 장 한마디)
   - `user_tickers`: `string[]`
+  - `chapter`: `{ name:"opening"|"theme"|"closing", start_id:int, end_id:int }[]` (선택)
   - `scripts`: `{ id:int, speaker:str, text:str, sources:any[] }[]`

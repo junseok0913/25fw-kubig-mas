@@ -383,9 +383,10 @@ def main() -> None:
         "user_tickers": [],
     })
 
-    # 최종 산출물 저장: date/user_tickers/chapter/scripts
+    # 최종 산출물 저장: date/nutshell/user_tickers/chapter/scripts
     final_payload = {
         "date": result.get("date", date_yyyymmdd),
+        "nutshell": result.get("nutshell", ""),
         "user_tickers": result.get("user_tickers", []),
         "chapter": result.get("chapter", _init_chapter()),
         "scripts": result.get("scripts", []),
