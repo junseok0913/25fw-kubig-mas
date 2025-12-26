@@ -90,8 +90,8 @@
 Gemini `generateContent`를 사용합니다.
 - `generationConfig.responseModalities = ["AUDIO"]`
 - `generationConfig.temperature = {temperature}`
-- `generationConfig.speechConfig.multiSpeakerVoiceConfig`에 `speaker1/speaker2` voice를 설정
-- 프롬프트는 turn 단위로, 해당 turn speaker label 1개만 사용(단일 화자 output 목적)
+- `generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName`에 **단일 voice**를 설정(턴의 speaker에 맞춰 선택)
+- 프롬프트는 turn 단위로, 해당 turn의 `text`만 전달(화자 라벨은 사용하지 않음)
 
 ## Rate Limit Strategy
 Gemini 쿼터(RPM) 초과를 피하기 위한 정책:

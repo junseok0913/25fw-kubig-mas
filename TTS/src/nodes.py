@@ -231,7 +231,7 @@ def build_turn_requests_node(state: TTSState) -> TTSState:
         label = t["label"]
         inst = speaker1_inst if label == "speaker1" else speaker2_inst
         text = t["text"].replace("\n", " ").strip()
-        prompt = f"{inst}\n\n{label}: {text}\n"
+        prompt = f"{inst}\n\n{text}\n"
         requests.append(
             {
                 "id": t["id"],
@@ -321,6 +321,8 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
         tid = int(r["id"])
         chapter = str(r.get("chapter") or "all")
         speaker = str(r.get("speaker") or "")
+        label = str(r.get("label") or "")
+        voice_name = speaker1_voice if label == "speaker1" else speaker2_voice
         wav_path = out_dir / f"{str(tid).zfill(width)}.wav"
 
         if wav_path.exists():
@@ -356,8 +358,7 @@ def generate_turn_audio_parallel_node(state: TTSState) -> TTSState:
                 prompt=str(r["prompt"]),
                 api_key=api_key,
                 temperature=temperature,
-                speaker1_voice=speaker1_voice,
-                speaker2_voice=speaker2_voice,
+                voice_name=voice_name,
                 timeout_s=request_timeout_seconds,
             )
         except Exception:

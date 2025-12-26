@@ -1,4 +1,4 @@
-"""Gemini multi-speaker TTS 호출 유틸.
+"""Gemini single-speaker TTS 호출 유틸.
 
 Gemini `generateContent` API를 사용해 turn 단위 오디오(bytes)를 생성한다.
 """
@@ -64,8 +64,7 @@ def gemini_generate_tts(
     *,
     api_key: str,
     temperature: float,
-    speaker1_voice: str,
-    speaker2_voice: str,
+    voice_name: str,
     timeout_s: float = 120.0,
 ) -> bytes:
     model_path = get_model_path()
@@ -76,22 +75,7 @@ def gemini_generate_tts(
             "responseModalities": ["AUDIO"],
             "temperature": temperature,
             "speechConfig": {
-                "multiSpeakerVoiceConfig": {
-                    "speakerVoiceConfigs": [
-                        {
-                            "speaker": "speaker1",
-                            "voiceConfig": {
-                                "prebuiltVoiceConfig": {"voiceName": speaker1_voice}
-                            },
-                        },
-                        {
-                            "speaker": "speaker2",
-                            "voiceConfig": {
-                                "prebuiltVoiceConfig": {"voiceName": speaker2_voice}
-                            },
-                        },
-                    ]
-                }
+                "voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice_name}}
             },
         },
     }
@@ -140,8 +124,7 @@ def _trace_inputs_tts_call(inputs: dict) -> dict:
         "end_id": inputs.get("end_id"),
         "turns": inputs.get("turns"),
         "temperature": inputs.get("temperature"),
-        "speaker1_voice": inputs.get("speaker1_voice"),
-        "speaker2_voice": inputs.get("speaker2_voice"),
+        "voice_name": inputs.get("voice_name"),
         "timeout_s": inputs.get("timeout_s"),
         "prompt_chars": prompt_chars,
         "prompt_sha256_16": prompt_hash,
@@ -172,15 +155,13 @@ def gemini_generate_tts_traced(
     prompt: str,
     api_key: str,
     temperature: float,
-    speaker1_voice: str,
-    speaker2_voice: str,
+    voice_name: str,
     timeout_s: float = 120.0,
 ) -> bytes:
     return gemini_generate_tts(
         prompt,
         api_key=api_key,
         temperature=temperature,
-        speaker1_voice=speaker1_voice,
-        speaker2_voice=speaker2_voice,
+        voice_name=voice_name,
         timeout_s=timeout_s,
     )
