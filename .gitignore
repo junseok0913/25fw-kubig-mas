@@ -2,3 +2,10 @@ __pycache__/
 ChartAgent/
 .env
 .pytest_cache/
+tmp/
+cache/
+temp/
+closinglegacy/
+Podcast/podcast.db*
+.serena/
+.claude/
