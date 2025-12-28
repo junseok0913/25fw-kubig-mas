@@ -5,3 +5,4 @@ ChartAgent/
 tmp/
 closinglegacy/
 Podcast/podcast.db*
+.serena/
