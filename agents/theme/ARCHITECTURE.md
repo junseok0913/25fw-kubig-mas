@@ -97,7 +97,6 @@ ThemeAgent/Worker는 아래 툴들을 호출할 수 있습니다.
 
 - `get_news_list`: 캐시된 뉴스 인덱스 필터링 (`shared/tools/get_news_list.md`)
 - `get_news_content`: 뉴스 본문 로드(캐시 미스 시 S3 다운로드) (`shared/tools/get_news_content.md`)
-- `list_downloaded_bodies`: 로컬에 내려받은 본문 목록 조회 (`shared/tools/list_downloaded_bodies.md`)
 - `count_keyword_frequency`: titles/bodies에서 키워드 빈도 계산 (`shared/tools/count_keyword_frequency.md`)
 - `get_ohlcv`: yfinance OHLCV 조회 (`shared/tools/get_ohlcv.md`)
 - `get_calendar`: 이벤트 캘린더 조회 (`shared/tools/get_calendar.md`)
@@ -176,4 +175,3 @@ ThemeAgent는 두 가지 모드를 지원합니다.
   - 적용 없이 기존 scripts를 유지합니다(실행 자체는 성공).
 - 캐시 정리:
   - 종료 시 `cache/{date}`는 삭제되며 `temp/theme.json`은 유지됩니다.
-

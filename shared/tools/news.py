@@ -167,22 +167,6 @@ def get_news_content(pks: List[str], bucket: Optional[str] = None) -> Dict[str, 
     return {"count": len(articles), "articles": articles}
 
 
-@tool
-def list_downloaded_bodies() -> Dict[str, Any]:
-    """List cached news bodies."""
-    logger.info("list_downloaded_bodies 호출")
-    bodies_dir = get_bodies_dir()
-    bodies_dir.mkdir(parents=True, exist_ok=True)
-    news_index = {a.get("pk"): a for a in _iter_articles()}
-    entries = []
-    for file in sorted(bodies_dir.glob("*.txt")):
-        pk = file.stem
-        title = news_index.get(pk, {}).get("title")
-        entries.append({"pk": pk, "title": title})
-    logger.info("list_downloaded_bodies 결과: %d건 반환", len(entries))
-    return {"count": len(entries), "articles": entries}
-
-
 def _count_in_text(text: str, keyword: str) -> int:
     return len(re.findall(re.escape(keyword), text, flags=re.IGNORECASE))
 

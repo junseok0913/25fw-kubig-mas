@@ -109,7 +109,6 @@ OpeningAgent는 아래 툴들을 “LLM tool call”로 호출할 수 있습니�
 
 - `get_news_list`: 캐시된 뉴스 인덱스 필터링 (`shared/tools/get_news_list.md`)
 - `get_news_content`: 뉴스 본문 로드(캐시 미스 시 S3 다운로드) (`shared/tools/get_news_content.md`)
-- `list_downloaded_bodies`: 로컬에 내려받은 본문 목록 조회 (`shared/tools/list_downloaded_bodies.md`)
 - `count_keyword_frequency`: titles/bodies에서 키워드 빈도 계산 (`shared/tools/count_keyword_frequency.md`)
 - `get_calendar`: 이벤트 캘린더 조회 (`shared/tools/get_calendar.md`)
 - `get_ohlcv`: yfinance OHLCV 조회 (`shared/tools/get_ohlcv.md`)
@@ -216,4 +215,3 @@ Source:
 - 캐시 정리:
   - orchestrator/standalone 모두 종료 시 `cache/{date}`는 삭제됩니다.
   - 단, `temp/`는 유지되므로 ThemeAgent 단독 실행이 가능합니다.
-

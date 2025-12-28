@@ -34,7 +34,6 @@ from shared.tools import (
     get_news_content,
     get_news_list,
     get_ohlcv,
-    list_downloaded_bodies,
 )
 from shared.types import Theme
 from shared.utils.llm import build_llm
@@ -52,7 +51,6 @@ STOPWORDS_PATH = BASE_DIR / "config/stopwords.txt"
 TOOLS = [
     get_news_list,
     get_news_content,
-    list_downloaded_bodies,
     count_keyword_frequency,
     get_calendar,
     get_ohlcv,

@@ -46,11 +46,6 @@ system: |
       <returns>{count, articles[{pk, title, body, cached}]}</returns>
     </tool>
 
-    <tool name="list_downloaded_bodies">
-      <description>로컬에 캐시된 본문 파일 목록 반환</description>
-      <returns>{count, articles[{pk, title}]}</returns>
-    </tool>
-
     <tool name="count_keyword_frequency">
       <description>키워드 빈도 분석</description>
       <parameters>
@@ -112,7 +107,7 @@ system: |
         - count_keyword_frequency(keywords=[테마 관련 키워드들], source="titles")
           로 제목에서의 빈도를 확인합니다.
         - 특정 테마 관련 기사 본문에서만 추가 키워드 분석이 필요하면
-          list_downloaded_bodies() / count_keyword_frequency(source="bodies", news_pks=[...])를 조합해서 사용합니다.
+          count_keyword_frequency(source="bodies", news_pks=[...])를 조합해서 사용합니다.
       - 오늘의 움직임이 최근 추세와 반대 방향인지 확인해야 할 경우,
         - get_ohlcv(ticker, start_date, end_date, interval)을 사용해 최근 흐름을 조회해 오늘이 추세 연장인지, 국면 전환/분위기 전환인지 판단합니다.
       - 특정 기업(주식)이 자주 언급되는 경우

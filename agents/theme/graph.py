@@ -33,7 +33,6 @@ from shared.tools import (
     get_news_content,
     get_news_list,
     get_ohlcv,
-    list_downloaded_bodies,
 )
 from shared.types import ScriptTurn, Theme
 from shared.utils.llm import build_llm
@@ -50,7 +49,6 @@ REFINER_PROMPT_PATH = BASE_DIR / "prompt/theme_refine.yaml"
 TOOLS = [
     get_news_list,
     get_news_content,
-    list_downloaded_bodies,
     count_keyword_frequency,
     get_ohlcv,
     get_calendar,

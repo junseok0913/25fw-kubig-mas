@@ -49,11 +49,6 @@ system: |
       <returns>{count, articles[{pk, title, body, cached}]}</returns>
     </tool>
 
-    <tool name="list_downloaded_bodies">
-      <description>로컬에 캐시된 본문 파일 목록 반환</description>
-      <returns>{count, articles[{pk, title}]}</returns>
-    </tool>
-
     <tool name="count_keyword_frequency">
       <description>키워드 빈도 분석</description>
       <parameters>
