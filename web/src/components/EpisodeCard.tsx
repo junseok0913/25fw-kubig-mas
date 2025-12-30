@@ -50,7 +50,7 @@ export default function EpisodeCard({ episode }: EpisodeCardProps) {
               {episode.nutshell}
             </span>
             {/* Underline that draws from left on hover - matches text width */}
-            <span className="absolute bottom-[2px] left-0 h-[2px] bg-text-primary w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-[600ms] ease-out" />
+            <span className="absolute bottom-[2px] left-0 h-[1px] bg-text-primary w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-[600ms] ease-out" />
           </span>
         </div>
 

@@ -93,13 +93,13 @@ export default function EpisodePlayer({ episode }: EpisodePlayerProps) {
 
       {/* Main content area - height: calc(100vh - 160px) for header + playbar */}
       <main className="flex-1 flex gap-5 px-10 min-h-0 overflow-hidden">
-        {/* Landing page - left side */}
-        <div className="flex-1 bg-white rounded-xl min-w-0 overflow-hidden">
+        {/* Landing page - left side (4 columns, hidden on small screens) */}
+        <div className="hidden lg:flex lg:flex-[4] bg-white rounded-xl min-w-0 overflow-hidden">
           {/* Placeholder for future content (charts, articles, etc.) */}
         </div>
 
-        {/* Script viewer - right side (600px) */}
-        <div className="w-[600px] bg-white rounded-xl overflow-hidden flex flex-col shrink-0">
+        {/* Script viewer - right side (2 columns, full width on small screens) */}
+        <div className="flex-1 lg:flex-[2] bg-white rounded-xl overflow-hidden flex flex-col min-w-0">
           <div className="pt-10 pb-10 flex-1 min-h-0 overflow-hidden">
             <ScriptViewer
               scripts={episode.scripts}
