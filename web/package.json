@@ -5,6 +5,7 @@
   "scripts": {
     "build:data": "npx ts-node --esm scripts/build-data.ts",
     "dev": "next dev",
+    "dev:network": "next dev --hostname 0.0.0.0",
     "dev:fresh": "npm run build:data && next dev",
     "build": "npm run build:data && next build",
     "start": "next start",

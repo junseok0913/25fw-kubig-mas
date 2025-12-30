@@ -23,7 +23,8 @@ http://localhost:3000 에서 확인
 
 | 명령어 | 설명 |
 |--------|------|
-| `npm run dev` | 개발 서버 실행 (기존 데이터 사용) |
+| `npm run dev` | 개발 서버 실행 (localhost만) |
+| `npm run dev:network` | 개발 서버 실행 (외부 네트워크 접근 허용, `내IP:3000`) |
 | `npm run dev:fresh` | 데이터 빌드 + 개발 서버 |
 | `npm run build:data` | DB → public/ 데이터 빌드만 |
 | `npm run build` | 데이터 빌드 + 프로덕션 빌드 |
