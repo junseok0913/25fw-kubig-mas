@@ -16,11 +16,25 @@ function formatTime(seconds: number): string {
 
 export default function Playbar({ audioSrc, currentTime, onTimeUpdate }: PlaybarProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const speedControlRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [internalTime, setInternalTime] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(1.1);
   const [isLooping, setIsLooping] = useState(false);
+  const [isSpeedHovered, setIsSpeedHovered] = useState(false);
+  const [isSpeedControlOpen, setIsSpeedControlOpen] = useState(false);
+
+  // Close speed control when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (speedControlRef.current && !speedControlRef.current.contains(e.target as Node)) {
+        setIsSpeedControlOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Sync external currentTime with audio
   useEffect(() => {
@@ -39,6 +53,7 @@ export default function Playbar({ audioSrc, currentTime, onTimeUpdate }: Playbar
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
+      audioRef.current.playbackRate = playbackRate;
     }
   };
 
@@ -74,16 +89,18 @@ export default function Playbar({ audioSrc, currentTime, onTimeUpdate }: Playbar
     }
   };
 
-  const cyclePlaybackRate = () => {
-    const rates = [1, 1.25, 1.5, 1.75, 2];
-    const currentIndex = rates.indexOf(playbackRate);
-    const nextIndex = (currentIndex + 1) % rates.length;
-    const newRate = rates[nextIndex];
-    setPlaybackRate(newRate);
+  const updatePlaybackRate = (newRate: number) => {
+    const clampedRate = Math.max(0.25, Math.min(2, newRate));
+    const roundedRate = Math.round(clampedRate * 100) / 100;
+    setPlaybackRate(roundedRate);
     if (audioRef.current) {
-      audioRef.current.playbackRate = newRate;
+      audioRef.current.playbackRate = roundedRate;
     }
   };
+
+  const incrementSpeed = () => updatePlaybackRate(playbackRate + 0.05);
+  const decrementSpeed = () => updatePlaybackRate(playbackRate - 0.05);
+  const resetSpeed = () => updatePlaybackRate(1);
 
   const toggleLoop = () => {
     setIsLooping(!isLooping);
@@ -107,13 +124,72 @@ export default function Playbar({ audioSrc, currentTime, onTimeUpdate }: Playbar
       {/* Controls */}
       <div className="flex items-center gap-4">
         {/* Playback speed */}
-        <button
-          onClick={cyclePlaybackRate}
-          className="w-8 h-8 flex items-center justify-center"
-          title={`Speed: ${playbackRate}x`}
-        >
-          <img src="/icons/gauge.svg" alt="speed" className="w-4 h-4 opacity-70" />
-        </button>
+        <div ref={speedControlRef} className="relative">
+          <button
+            onClick={() => setIsSpeedControlOpen(!isSpeedControlOpen)}
+            onMouseEnter={() => setIsSpeedHovered(true)}
+            onMouseLeave={() => setIsSpeedHovered(false)}
+            className="w-8 h-8 flex items-center justify-center relative"
+          >
+            <img src="/icons/gauge.svg" alt="speed" className="w-4 h-4 opacity-70" />
+
+            {/* Hover tooltip - current speed */}
+            {isSpeedHovered && !isSpeedControlOpen && (
+              <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-medium text-black/70 whitespace-nowrap bg-white/80 px-1.5 py-0.5 rounded">
+                {playbackRate.toFixed(2)}x
+              </span>
+            )}
+          </button>
+
+          {/* Speed control popover */}
+          {isSpeedControlOpen && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-xl shadow-lg border border-black/10 p-3 w-[140px]">
+              <div className="flex items-center justify-between gap-2">
+                {/* Decrement button */}
+                <button
+                  onClick={decrementSpeed}
+                  disabled={playbackRate <= 0.25}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-black/10 hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg width="12" height="2" viewBox="0 0 12 2" fill="none">
+                    <path d="M1 1H11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+
+                {/* Current speed display */}
+                <div className="flex-1 text-center">
+                  <span className="text-lg font-semibold tabular-nums">
+                    {playbackRate.toFixed(2)}x
+                  </span>
+                </div>
+
+                {/* Increment button */}
+                <button
+                  onClick={incrementSpeed}
+                  disabled={playbackRate >= 2}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-black/10 hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1V11M1 6H11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Reset button */}
+              <button
+                onClick={resetSpeed}
+                disabled={playbackRate === 1}
+                className="w-full mt-2 py-1.5 text-xs text-black/60 hover:text-black hover:bg-black/5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M1 4.5C1.5 2.5 3.5 1 6 1C8.76 1 11 3.24 11 6C11 8.76 8.76 11 6 11C3.79 11 1.95 9.5 1.29 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M1 1V4.5H4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                1.00x
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Skip backward */}
         <button
