@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build:data": "npx ts-node --esm scripts/build-data.ts",
     "dev": "next dev",
-    "build": "next build",
+    "dev:fresh": "npm run build:data && next dev",
+    "build": "npm run build:data && next build",
     "start": "next start",
     "lint": "eslint"
   },
