@@ -4,7 +4,7 @@ import { useMemo, useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Unlock } from 'lucide-react';
 import type { Slide } from '@/types/slide';
-import { EPISODE_20251222_SLIDES } from '@/types/slide';
+import { getSlides } from '@/landing';
 import {
   TitleSlide,
   MarketSummarySlide,
@@ -20,17 +20,15 @@ import {
 interface SlideshowProps {
   currentTurnId: number;
   episodeDate?: string;
+  onSlideClick?: (turnId: number) => void;
 }
 
-export function Slideshow({ currentTurnId, episodeDate }: SlideshowProps) {
+export function Slideshow({ currentTurnId, episodeDate, onSlideClick }: SlideshowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [lockedSlideIndex, setLockedSlideIndex] = useState<number | null>(null);
 
   const slides = useMemo(() => {
-    if (episodeDate === '20251222') {
-      return EPISODE_20251222_SLIDES;
-    }
-    return EPISODE_20251222_SLIDES;
+    return getSlides(episodeDate || '');
   }, [episodeDate]);
 
   const currentSlideIndex = useMemo(() => {
@@ -98,6 +96,14 @@ export function Slideshow({ currentTurnId, episodeDate }: SlideshowProps) {
       }
     })();
 
+    const handleSlideClick = () => {
+      // Don't navigate when any slide is locked
+      if (lockedSlideIndex !== null) return;
+      if (onSlideClick) {
+        onSlideClick(slide.turnId);
+      }
+    };
+
     return (
       <motion.section
         id={`slide-${index}`}
@@ -110,8 +116,9 @@ export function Slideshow({ currentTurnId, episodeDate }: SlideshowProps) {
         }}
         transition={{ duration: 0.3 }}
         className={`relative transition-all duration-300 ${
-          isActive ? 'z-10' : 'z-0'
-        }`}
+          lockedSlideIndex === null ? 'cursor-pointer' : ''
+        } ${isActive ? 'z-10' : 'z-0'}`}
+        onClick={handleSlideClick}
       >
         {isActive && (
           <div className="absolute -left-4 top-0 bottom-0 w-1 bg-black rounded-full" />
@@ -119,7 +126,10 @@ export function Slideshow({ currentTurnId, episodeDate }: SlideshowProps) {
 
         {/* Lock button */}
         <button
-          onClick={() => handleLockToggle(index)}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleLockToggle(index);
+          }}
           className={`absolute top-4 right-4 z-20 p-2 rounded-lg transition-all duration-200 ${
             isLocked
               ? 'bg-black text-white shadow-lg'
@@ -135,28 +145,20 @@ export function Slideshow({ currentTurnId, episodeDate }: SlideshowProps) {
     );
   }
 
-  const displaySlideIndex = lockedSlideIndex !== null ? lockedSlideIndex : currentSlideIndex;
-
   return (
     <div
       ref={containerRef}
       className="h-full w-full bg-white overflow-y-auto"
     >
-      {/* Progress bar */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-4 py-2">
-        {lockedSlideIndex !== null && (
-          <div className="flex items-center text-xs text-black font-medium mb-1">
+      {/* Lock indicator */}
+      {lockedSlideIndex !== null && (
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-4 py-2">
+          <div className="flex items-center text-xs text-black font-medium">
             <Lock className="w-3 h-3 mr-1" />
-            고정됨
+            슬라이드 고정됨
           </div>
-        )}
-        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-black transition-all duration-300"
-            style={{ width: `${((displaySlideIndex + 1) / slides.length) * 100}%` }}
-          />
         </div>
-      </div>
+      )}
 
       {/* Slides as vertical sections */}
       <div className="w-full px-6 py-8 space-y-8">

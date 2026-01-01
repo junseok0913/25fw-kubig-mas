@@ -48,6 +48,15 @@ export default function EpisodePlayer({ episode }: EpisodePlayerProps) {
     setCurrentTime(timeInSeconds);
   };
 
+  const handleSlideClick = (turnId: number) => {
+    // Find the script with matching turnId
+    const script = episode.scripts.find((s) => s.id === turnId);
+    if (script) {
+      const timeInSeconds = script.time[0] / 1000;
+      setCurrentTime(timeInSeconds);
+    }
+  };
+
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
     document.documentElement.dataset.direction = 'back';
@@ -96,7 +105,11 @@ export default function EpisodePlayer({ episode }: EpisodePlayerProps) {
       <main className="flex-1 flex gap-5 px-10 min-h-0 overflow-hidden">
         {/* Landing page - left side (4 columns, hidden on small screens) */}
         <div className="hidden lg:flex lg:flex-[4] bg-zinc-950 rounded-xl min-w-0 overflow-hidden">
-          <Slideshow currentTurnId={currentTurnId} episodeDate={episode.date} />
+          <Slideshow
+            currentTurnId={currentTurnId}
+            episodeDate={episode.date}
+            onSlideClick={handleSlideClick}
+          />
         </div>
 
         {/* Script viewer - right side (2 columns, full width on small screens) */}
