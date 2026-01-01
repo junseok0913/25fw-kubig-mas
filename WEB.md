@@ -33,9 +33,9 @@ http://localhost:3000 에서 확인
 ## 데이터 흐름
 
 ```
-../Podcast/podcast.db          # SQLite DB (에피소드 메타데이터)
-../Podcast/{date}/{date}.json  # 에피소드 스크립트 데이터
-../Podcast/{date}/{date}.wav   # 에피소드 오디오 파일
+../podcast/podcast.db          # SQLite DB (에피소드 메타데이터)
+../podcast/{date}/{date}.json  # 에피소드 스크립트 데이터
+../podcast/{date}/{date}.wav   # 에피소드 오디오 파일
         ↓
   npm run build:data (scripts/build-data.ts)
         ↓

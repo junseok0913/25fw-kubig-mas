@@ -217,4 +217,4 @@ cache/{YYYYMMDD}/sec/
 4. `temp/` 아티팩트 저장 규칙 확정(`temp/ticker_pipeline.json`, `temp/debate/{date}/*.json`)
 5. E2E 확인
    - `python orchestrator.py 20251222 --stage 3 -t GOOG`
-   - 결과: `Podcast/20251222/script.json`에 (opening+theme+tickers+closing) 순서로 `scripts`가 누적되는지 확인
+   - 결과: `podcast/20251222/script.json`에 (opening+theme+tickers+closing) 순서로 `scripts`가 누적되는지 확인

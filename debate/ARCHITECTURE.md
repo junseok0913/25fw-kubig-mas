@@ -399,7 +399,7 @@ Refiner 출력(JSON, 개념):
 
 ### 7.4 최종 스크립트 출력(챕터) 구성 제안
 
-최종 `script.json`(예: `Podcast/{date}/script.json`)에 user ticker 파트를 넣을 때는,
+최종 `script.json`(예: `podcast/{date}/script.json`)에 user ticker 파트를 넣을 때는,
 기존 `chapter` 구조에 티커별 구간을 **순서대로 삽입**하는 형태를 권장합니다.
 
 예시(개념):

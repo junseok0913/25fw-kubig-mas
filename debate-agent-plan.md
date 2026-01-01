@@ -36,7 +36,7 @@ flowchart TD
 
 - `rounds`, `debate_transcript`처럼 **토론 로그/원문 중심**이라 파일이 매우 큼
 - `sources.type = sec_filing`을 포함해, 현재 프로젝트의 `ScriptTurn.sources` 스키마(`article|chart|event`)와 바로 호환되지 않음
-- 무엇보다 현재 프로젝트의 TTS 입력은 `Podcast/{date}/script.json`의 `scripts: ScriptTurn[]`이므로, “티커 토론 JSON”을 그대로 최종 output으로 두는 방향은 맞지 않음
+- 무엇보다 현재 프로젝트의 TTS 입력은 `podcast/{date}/script.json`의 `scripts: ScriptTurn[]`이므로, “티커 토론 JSON”을 그대로 최종 output으로 두는 방향은 맞지 않음
 
 따라서 이 단계의 “생산용(프로덕션) output”은 **토론 로그가 아니라 `ScriptTurn[]`(대본)** 이어야 하고, 토론 로그는 필요하면 별도 debug artifact로 분리하는 구성이 적합합니다.
 
@@ -201,7 +201,7 @@ Refiner 출력 예시(ThemeAgent와 동일 스타일):
 
 ### 6.1.1 (추가) Debate 출력물 JSON 스키마(중간 산출물)
 
-티커 단계는 **최종 output을 새로 만들지 않고** `Podcast/{date}/script.json`의 `scripts[]`에 흡수하는 것이 목표지만,  
+티커 단계는 **최종 output을 새로 만들지 않고** `podcast/{date}/script.json`의 `scripts[]`에 흡수하는 것이 목표지만,  
 `script_writer`에 “모든 토론 턴”을 컨텍스트로 주입하기 위해 티커별로 아래 형태의 **Debate 출력 JSON(중간 산출물)**을 정의합니다.
 
 요구사항:
@@ -230,7 +230,7 @@ Refiner 출력 예시(ThemeAgent와 동일 스타일):
 }
 ```
 
-`sources[]`는 `Podcast/{date}/{date}.json`의 `scripts[*].sources`와 동일한 스키마(`article|chart|event`)를 사용합니다.
+`sources[]`는 `podcast/{date}/{date}.json`의 `scripts[*].sources`와 동일한 스키마(`article|chart|event`)를 사용합니다.
 
 ### 6.2 티커 섹션 템플릿(권장)
 
@@ -256,9 +256,9 @@ Refiner 출력 예시(ThemeAgent와 동일 스타일):
 
 ### 6.4 “생산용 output”과 “디버그 output”을 분리한다(권장)
 
-#### 생산용(최종) output: 기존 `Podcast/{date}/script.json`에 흡수
+#### 생산용(최종) output: 기존 `podcast/{date}/script.json`에 흡수
 
-현재 프로젝트는 최종 산출물을 `Podcast/{date}/script.json`(TTS 입력)으로 저장합니다.  
+현재 프로젝트는 최종 산출물을 `podcast/{date}/script.json`(TTS 입력)으로 저장합니다.  
 따라서 티커 분석은 별도 JSON이 아니라, 아래처럼 **최종 payload의 `scripts[]`에 turn으로 포함**되는 것이 목표입니다.
 
 ```json

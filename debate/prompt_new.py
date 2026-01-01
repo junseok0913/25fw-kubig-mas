@@ -1,6 +1,6 @@
 """XML-structured prompt templates for the ticker debate pipeline.
 
-This module mirrors `debate/prompts.py`, but re-wraps the existing prompt text into
+This module replaces the legacy prompt module and re-wraps the prompt text into
 the XML section style used by other agents' YAML prompts.
 
 Important:

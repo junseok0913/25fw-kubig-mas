@@ -11,7 +11,7 @@ import Database from 'better-sqlite3';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PODCAST_DIR = path.resolve(__dirname, '../../Podcast');
+const PODCAST_DIR = path.resolve(__dirname, '../../podcast');
 const PUBLIC_DIR = path.resolve(__dirname, '../public');
 const DATA_DIR = path.join(PUBLIC_DIR, 'data');
 const AUDIO_DIR = path.join(PUBLIC_DIR, 'audio');

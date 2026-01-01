@@ -1,7 +1,7 @@
-"""SQLite index for @Podcast outputs.
+"""SQLite index for @podcast outputs.
 
 This module maintains a small SQLite DB that makes it easy for a web server to
-list and serve podcast artifacts stored under `Podcast/{date}/`.
+list and serve podcast artifacts stored under `podcast/{date}/`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ _BOOL_TYPES_REGISTERED = False
 
 
 def get_default_db_path(repo_root: Path) -> Path:
-    return repo_root / "Podcast" / DEFAULT_DB_FILENAME
+    return repo_root / "podcast" / DEFAULT_DB_FILENAME
 
 
 def utc_iso_from_timestamp(ts: float) -> str:

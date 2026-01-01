@@ -593,13 +593,13 @@ def main() -> None:
     }
     final_json = json.dumps(final_payload, ensure_ascii=False, indent=2)
 
-    # Podcast/{date}/script.json (TTS 파이프라인 입력)
-    podcast_dir = ROOT / "Podcast" / date_yyyymmdd
+    # podcast/{date}/script.json (TTS 파이프라인 입력)
+    podcast_dir = ROOT / "podcast" / date_yyyymmdd
     podcast_dir.mkdir(parents=True, exist_ok=True)
     podcast_script_path = podcast_dir / "script.json"
     podcast_script_path.write_text(final_json, encoding="utf-8")
 
-    # Podcast index DB 업데이트
+    # podcast index DB 업데이트
     upsert_script_row(
         db_path=get_default_db_path(ROOT),
         date=date_yyyymmdd,

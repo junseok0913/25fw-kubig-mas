@@ -1,12 +1,12 @@
 """TTS LangGraph 파이프라인.
 
 목표:
-- 입력 `Podcast/{date}/script.json`의 `scripts[]`를 기반으로, **turn(1개) 단위**로 TTS를 생성한다.
+- 입력 `podcast/{date}/script.json`의 `scripts[]`를 기반으로, **turn(1개) 단위**로 TTS를 생성한다.
 - turn 오디오 길이(샘플/프레임 기반)를 이용해 `start_time_ms`/`end_time_ms` 타임라인을 계산한다.
 - 최종 `{date}.wav`를 만들고, `tts/*.wav`(턴별)와 `timeline.json`을 함께 저장한다.
 
 역할:
-- CLI 엔트리포인트: `python -m TTS.src.tts {YYYYMMDD}`
+- CLI 엔트리포인트: `python -m tts.src.tts {YYYYMMDD}`
 - LangGraph 그래프 조립/실행(노드 구현은 `nodes.py`에 위치)
 """
 
@@ -119,8 +119,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         logger.error("GEMINI_API_KEY가 설정되지 않았습니다. (.env 또는 환경변수)")
         return 2
 
-    script_path = ROOT_DIR / "Podcast" / date_yyyymmdd / "script.json"
-    out_dir = ROOT_DIR / "Podcast" / date_yyyymmdd / "tts"
+    script_path = ROOT_DIR / "podcast" / date_yyyymmdd / "script.json"
+    out_dir = ROOT_DIR / "podcast" / date_yyyymmdd / "tts"
 
     try:
         result = run_tts(date=date_yyyymmdd, script_path=script_path, out_dir=out_dir)

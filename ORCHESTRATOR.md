@@ -106,8 +106,8 @@ sequenceDiagram
     CA->>FS: write temp/closing.json
   end
 
-  CLI->>FS: write Podcast/{date}/script.json
-  CLI->>FS: update Podcast/podcast.db
+  CLI->>FS: write podcast/{date}/script.json
+  CLI->>FS: update podcast/podcast.db
   CLI->>FS: cleanup cache/{date} (graph + finalizer)
 ```
 
@@ -131,7 +131,7 @@ temp/                          # 단계 분리(standalone)용 중간 산출물(�
     {YYYYMMDD}/
       {TICKER}_debate.json
 
-Podcast/{YYYYMMDD}/
+podcast/{YYYYMMDD}/
   script.json                  # 최종 산출물(TTS 입력)
 ```
 
@@ -226,7 +226,7 @@ ChapterRange:
 }
 ```
 
-### Saved Payload (`Podcast/{date}/script.json`)
+### Saved Payload (`podcast/{date}/script.json`)
 
 ```json
 {
@@ -245,9 +245,9 @@ ChapterRange:
 
 ## 결과 저장 및 DB 업데이트
 
-- `Podcast/{date}/script.json`:
+- `podcast/{date}/script.json`:
   - TTS 파이프라인의 입력 파일로 사용됩니다.
-- `Podcast/podcast.db`:
+- `podcast/podcast.db`:
   - `podcast_db.py`를 통해 날짜별 인덱스(예: `nutshell`, `user_tickers`, `script_saved_at`)를 업데이트합니다.
 
 ## 에러 처리 및 재실행 특성
