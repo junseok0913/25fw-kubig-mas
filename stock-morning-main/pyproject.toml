@@ -1,0 +1,16 @@
+[project]
+name = "stock-morning"
+version = "0.2.0"
+description = "SEC filing crawler and stock data agent system"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "boto3>=1.34.0",
+    "openai>=1.51.0",
+    "python-dotenv>=1.0.0",
+    "langgraph>=0.0.46",
+    "yfinance>=0.2.40",
+    "pydantic>=2.0.0",
+]
