@@ -14,7 +14,7 @@ flowchart TD
   M -->|end| E(("END"))
 ```
 
-- 구현 파일: `debate/graph.py`
+- 구현 파일: `agents/debate/graph.py` (호환용 엔트리포인트: `debate/graph.py`)
 - 상태 타입: `debate/types.py` (`TickerDebateState`, `TickerDebateOutput`)
 
 ### 1.1 LLM 모델/프로파일(요약)
@@ -81,8 +81,8 @@ flowchart TD
 ```
 
 핵심 원리:
-- LLM 출력은 반드시 `{"text": "...", "action": "...", "confidence": 0.0, "sources": [...]}` JSON 1개만 허용 (`debate/prompt_new.py`).
-- `sources`는 **allowed_sources에서만** 고르도록 강제하고, 코드에서 **교집합 매칭(정규화)**로 재검증합니다 (`debate/graph.py`의 `_canonical_source`, `_normalize_sources`).
+- LLM 출력은 반드시 `{"text": "...", "action": "...", "confidence": 0.0, "sources": [...]}` JSON 1개만 허용 (프롬프트: `agents/debate/prompt/debate_main.yaml`, 로드: `agents/debate/graph.py`).
+- `sources`는 **allowed_sources에서만** 고르도록 강제하고, 코드에서 **교집합 매칭(정규화)**로 재검증합니다 (`agents/debate/graph.py`의 `_canonical_source`, `_normalize_sources`).
 - 최소 2라운드를 강제합니다(`DEBATE_MIN_ROUNDS`, 기본 2). 즉, 최소 1번은 전문가 간 상호 반응(논쟁)이 발생하도록 설계합니다.
 - 중재자 단계는 "협의(합의)"를 엄격히 정의합니다: **4명 action 동일 AND 4명 confidence가 임계값 이상**일 때만 합의로 간주합니다(`DEBATE_CONSENSUS_CONFIDENCE`, 기본 0.7).
 
@@ -282,7 +282,7 @@ SEC EDGAR는 **요청 식별을 위한 User-Agent 헤더(연락처 포함)**를 
 ```mermaid
 sequenceDiagram
   participant CLI as "CLI (python -m debate.graph)"
-  participant G as "debate/graph.py"
+  participant G as "agents/debate/graph.py"
   participant NL as "get_news_list"
   participant NC as "get_news_content"
   participant OH as "get_ohlcv"
@@ -330,7 +330,7 @@ flowchart TD
   T --> F{{"fan-out: tickers"}}
 
   subgraph PT["per ticker (parallel)"]
-    D["debate: debate/graph.py"] --> W["ticker_script_worker: LLM(no tools)"]
+    D["debate: agents/debate/graph.py"] --> W["ticker_script_worker: LLM(no tools)"]
   end
 
   F --> D

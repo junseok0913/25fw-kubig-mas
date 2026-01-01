@@ -3,6 +3,8 @@
 `debate/`는 “티커 1개 → 4인 토론(라운드) → 중재자 결론”을 **독립 실행**할 수 있는 디베이트 전용 모듈입니다.  
 최종 산출물은 **대본이 아니라**, 이후 `script_writer` 단계에 컨텍스트로 주입하기 위한 **Debate JSON 아티팩트**입니다.
 
+구현은 `agents/debate/graph.py`에 있으며, `debate/graph.py`는 기존 실행/임포트를 위한 호환용 wrapper입니다.
+
 자세한 그래프/툴 스키마/캐시 원리는 `debate/ARCHITECTURE.md`를 참고하세요.
 
 ## 출력(JSON) 스키마
@@ -29,6 +31,11 @@
 ```
 
 `rounds[*].{role}.sources`는 프로젝트의 `ScriptTurn.sources`와 동일 스키마(`article|chart|event|sec_filing`)를 사용합니다.
+
+## 프롬프트 파일
+
+- Debate(전문가/중재자): `agents/debate/prompt/debate_main.yaml` (직접 로드: `agents/debate/graph.py`)
+- Ticker Script(Worker/Refiner): `debate/prompt/ticker_script_worker.yaml`, `debate/prompt/ticker_script_refine.yaml`
 
 ## 실행 방법
 
@@ -82,12 +89,12 @@ python -m debate.graph --help
 ### 파이썬 컴파일 체크
 
 ```bash
-python -m py_compile debate/graph.py debate/prompt_new.py debate/types.py
+python -m py_compile debate/graph.py debate/types.py agents/debate/graph.py agents/debate/types.py
 ```
 
 ### LLM 프로파일(선택)
 
-`debate/graph.py`는 아래 prefix로 LLM 설정을 읽습니다.
+`agents/debate/graph.py`는 아래 prefix로 LLM 설정을 읽습니다. (`debate/graph.py`는 호환용 wrapper)
 - 전문가: `DEBATE_FUNDAMENTAL`, `DEBATE_RISK`, `DEBATE_GROWTH`, `DEBATE_SENTIMENT`
 - 중재자: `DEBATE_MODERATOR`
 

@@ -1,77 +1,11 @@
-"""Debate output/state type definitions (debate-local).
+"""Compatibility wrapper for debate types.
 
-This module intentionally lives under `debate/` so the debate prototype can be
-added/removed without touching shared project types.
+Type definitions moved to `agents/debate/types.py` during the agent-style
+refactor. This module is kept so existing imports like `debate.ticker_script`
+continue to work.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, TypedDict
+from agents.debate.types import *  # noqa: F403
 
-from shared.types import Source as SharedSource
-
-
-DebateAction = Literal["BUY", "HOLD", "SELL"]
-
-
-class SecFilingSource(TypedDict):
-    type: Literal["sec_filing"]
-    ticker: str
-    form: str
-    filed_date: str  # YYYY-MM-DD
-    accession_number: str
-
-
-Source = SharedSource | SecFilingSource
-
-
-class DebateUtterance(TypedDict):
-    text: str
-    action: DebateAction
-    confidence: float  # 0.0 ~ 1.0
-    sources: List[Source]
-
-
-class DebateRound(TypedDict):
-    round: int
-    fundamental: DebateUtterance
-    risk: DebateUtterance
-    growth: DebateUtterance
-    sentiment: DebateUtterance
-
-
-class DebateConclusion(TypedDict):
-    text: str
-    action: DebateAction
-    confidence: float  # 0.0 ~ 1.0
-
-
-class TickerDebateOutput(TypedDict):
-    ticker: str
-    date: str  # YYYYMMDD
-    rounds: List[DebateRound]
-    conclusion: DebateConclusion
-
-
-class TickerDebateState(TypedDict, total=False):
-    """Internal debate state (graph-level)."""
-
-    # output fields
-    ticker: str
-    date: str  # YYYYMMDD
-    rounds: List[DebateRound]
-    conclusion: DebateConclusion
-
-    # runtime-only fields
-    max_rounds: int
-    current_round: int
-    should_continue: bool
-
-    news_list_json: str
-    sec_list_json: str
-    ohlcv_summary: str
-    allowed_sources: List[Source]
-    guidance_by_role: Dict[str, str]
-
-    # allow future extensions without churn
-    extra: Dict[str, Any]

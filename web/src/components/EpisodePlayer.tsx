@@ -7,6 +7,7 @@ import { Episode, Script } from '@/types/episode';
 import { formatDateKorean } from '@/lib/format';
 import ScriptViewer from './ScriptViewer';
 import Playbar from './Playbar';
+import { Slideshow } from './Slideshow';
 
 const springTransition = {
   type: 'spring' as const,
@@ -94,8 +95,8 @@ export default function EpisodePlayer({ episode }: EpisodePlayerProps) {
       {/* Main content area - height: calc(100vh - 160px) for header + playbar */}
       <main className="flex-1 flex gap-5 px-10 min-h-0 overflow-hidden">
         {/* Landing page - left side (4 columns, hidden on small screens) */}
-        <div className="hidden lg:flex lg:flex-[4] bg-white rounded-xl min-w-0 overflow-hidden">
-          {/* Placeholder for future content (charts, articles, etc.) */}
+        <div className="hidden lg:flex lg:flex-[4] bg-zinc-950 rounded-xl min-w-0 overflow-hidden">
+          <Slideshow currentTurnId={currentTurnId} episodeDate={episode.date} />
         </div>
 
         {/* Script viewer - right side (2 columns, full width on small screens) */}

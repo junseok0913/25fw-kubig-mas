@@ -4,7 +4,7 @@ ChartAgent/
 .pytest_cache/
 tmp/
 cache/
-# temp/
+temp/
 closinglegacy/
 .serena/
 .claude/

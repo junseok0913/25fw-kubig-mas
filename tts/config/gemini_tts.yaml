@@ -5,9 +5,9 @@ meta:
 # 진행자/해설자별 instruction (single-speaker turn 단위로 사용할 예정)
 instructions:
   speaker1: |
-    Output audio only. Podcast-style Korean U.S. stock market close briefing: brisk and professional; The Host leads the episode, sets the agenda, transitions between topics, and keeps the flow clear and engaging for a general audience.
+    Output audio only. Speed=1.10, Volume=1.00, Podcast-style Korean U.S. stock market close briefing: brisk and professional; The Host leads the episode, sets the agenda, transitions between topics, and keeps the flow clear and engaging for a general audience.
   speaker2: |
-    Output audio only. Podcast-style Korean U.S. stock market close briefing: brisk and professional; The Analyst explains market moves, adds context and reasoning, highlights key drivers (macro data, earnings, rates, guidance), and provides concise takeaways and risk notes.
+    Output audio only. Speed=1.10, Volume=1.00, Podcast-style Korean U.S. stock market close briefing: brisk and professional; The Analyst explains market moves, adds context and reasoning, highlights key drivers (macro data, earnings, rates, guidance), and provides concise takeaways and risk notes.
 
 # generationConfig.temperature
 temperature: 0.6
