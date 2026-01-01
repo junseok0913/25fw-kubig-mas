@@ -29,8 +29,15 @@ class EventSource(TypedDict):
     title: str
     date: str  # YYYY-MM-DD (ET)
 
+class SecFilingSource(TypedDict):
+    type: Literal["sec_filing"]
+    ticker: str
+    form: str
+    filed_date: str  # YYYY-MM-DD (ET)
+    accession_number: str
 
-Source = Union[ArticleSource, ChartSource, EventSource]
+
+Source = Union[ArticleSource, ChartSource, EventSource, SecFilingSource]
 
 
 class Theme(TypedDict):

@@ -22,6 +22,7 @@ from shared.config import (
     get_calendar_csv_path,
     get_temp_closing_path,
     get_temp_theme_path,
+    get_temp_ticker_pipeline_path,
     set_briefing_date,
 )
 from shared.fetchers import prefetch_all
@@ -134,9 +135,12 @@ def load_scripts_from_temp(state: ClosingState) -> ClosingState:
             set_briefing_date(state["date"])
         return state
 
-    temp_path = get_temp_theme_path()
+    # Prefer ticker pipeline output if present (Theme -> TickerPipeline -> Closing).
+    temp_path = get_temp_ticker_pipeline_path()
     if not temp_path.exists():
-        raise FileNotFoundError(f"Theme 결과가 없습니다: {temp_path}")
+        temp_path = get_temp_theme_path()
+    if not temp_path.exists():
+        raise FileNotFoundError(f"Theme/TickerPipeline 결과가 없습니다: {temp_path}")
 
     payload = json.loads(temp_path.read_text(encoding="utf-8"))
     temp_date = payload.get("date")
@@ -146,7 +150,7 @@ def load_scripts_from_temp(state: ClosingState) -> ClosingState:
 
     date_str = state_date or temp_date
     if not date_str:
-        raise ValueError("date 정보가 없습니다. CLI 인자 또는 temp/theme.json을 확인하세요.")
+        raise ValueError("date 정보가 없습니다. CLI 인자 또는 temp/ticker_pipeline.json/temp/theme.json을 확인하세요.")
 
     set_briefing_date(date_str)
 

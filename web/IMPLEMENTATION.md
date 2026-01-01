@@ -45,7 +45,7 @@ interface Episode {
 }
 
 interface Chapter {
-  name: "opening" | "theme" | "closing";
+  name: "opening" | "theme" | "ticker" | "closing";
   start_id: number;
   end_id: number;
 }
@@ -59,7 +59,7 @@ interface Script {
 }
 
 interface Source {
-  type: "chart" | "article" | "event";
+  type: "chart" | "article" | "event" | "sec_filing";
   ticker?: string;
   start_date?: string;
   end_date?: string;
@@ -67,6 +67,9 @@ interface Source {
   title?: string;
   id?: string;
   date?: string;
+  form?: string;
+  filed_date?: string;
+  accession_number?: string;
 }
 ```
 

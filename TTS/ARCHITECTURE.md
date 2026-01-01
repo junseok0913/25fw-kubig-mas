@@ -89,7 +89,7 @@ TTS는 `speaker`가 `"진행자"`면 `speaker1`, `"해설자"`면 `speaker2`로 
 - 오디오 포맷: `sample_rate_hz=24000`, `channels=1`, `sample_width_bytes=2`(s16le)
 - `turns[]`: `{id, chapter, speaker, wav, start_time_ms, end_time_ms, duration_ms}`
 - `gaps`: `common_gap_ms`, `chapter_gap_ms`
-  - 인접 turn의 `chapter`가 바뀌고 둘 다 알려진 챕터(`opening/theme/closing`)면 `chapter_gap_seconds` 적용
+  - 인접 turn의 `chapter`가 바뀌고 둘 다 알려진 챕터(`opening/theme/ticker/closing`)면 `chapter_gap_seconds` 적용
   - 그 외는 `common_gap_seconds` 적용
 
 ### 출력: `Podcast/{date}/{date}.wav`
@@ -119,4 +119,3 @@ TTS 파이프라인 완료 시 `podcast_db.update_tts_row(...)`로 다음을 업
 - `final_saved_at`: 최종 WAV의 mtime(UTC ISO)
 - `script_saved_at`: 입력 `script.json`의 mtime(UTC ISO)
 - (가능한 경우) `nutshell`, `user_tickers`도 함께 갱신
-

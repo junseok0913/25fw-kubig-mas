@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = ROOT_DIR / "TTS" / "config" / "gemini_tts.yaml"
-KNOWN_CHAPTERS: set[str] = {"opening", "theme", "closing"}
+KNOWN_CHAPTERS: set[str] = {"opening", "theme", "ticker", "closing"}
 
 
 def _load_gemini_tts_config(path: Path) -> GeminiTTSConfig:

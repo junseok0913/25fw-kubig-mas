@@ -1,6 +1,6 @@
 # Orchestrator 파이프라인 (`orchestrator.py`)
 
-`orchestrator.py`는 장마감 브리핑을 위한 상위 LangGraph 오케스트레이터입니다. 실행 시점에 필요한 데이터를 한 번에 프리페치(`cache/{date}/`)하고, 에이전트(Opening → Theme → Closing)를 순차 실행한 뒤 결과를 저장합니다.
+`orchestrator.py`는 장마감 브리핑을 위한 상위 LangGraph 오케스트레이터입니다. 실행 시점에 필요한 데이터를 한 번에 프리페치(`cache/{date}/`)하고, 에이전트(Opening → Theme → TickerPipeline → Closing)를 순차 실행한 뒤 결과를 저장합니다.
 
 ## 실행 모드
 
@@ -8,21 +8,23 @@
 
 - `--stage 0`: OpeningAgent까지만 실행
 - `--stage 1`: ThemeAgent까지 실행
-- `--stage 2`: ClosingAgent까지 실행(기본값)
+- `--stage 2`: TickerPipeline까지 실행(Closing 제외)
+- `--stage 3`: ClosingAgent까지 실행(기본값)
 
-Stage 모드는 항상 `Opening -> (Theme) -> (Closing)` 순서이며, “Theme만/Closing만” 단독 실행은 지원하지 않습니다.
+Stage 모드는 항상 `Opening -> (Theme) -> (TickerPipeline) -> (Closing)` 순서이며, 중간부터 단독 실행은 `--agent` 모드를 사용합니다.
 
 ### Agent 모드 (`--agent`)
 
-`--agent opening|theme|closing`을 지정하면 **단일 에이전트만 실행**합니다. 이때도 아래 두 노드는 항상 실행됩니다.
+`--agent opening|theme|ticker|closing`을 지정하면 **단일 에이전트만 실행**합니다. 이때도 아래 두 노드는 항상 실행됩니다.
 
 - `global_prefetch_node()` (항상 실행)
 - `cleanup_cache_node()` (항상 실행)
 
-단, Theme/Closing 단독 실행은 `temp/` 중간 산출물이 필요합니다.
+단, Theme/Ticker/Closing 단독 실행은 `temp/` 중간 산출물이 필요합니다.
 
 - `--agent theme` 실행 전: `temp/opening.json` 필요
-- `--agent closing` 실행 전: `temp/theme.json` 필요
+- `--agent ticker` 실행 전: `temp/theme.json` 필요
+- `--agent closing` 실행 전: `temp/ticker_pipeline.json` 우선 사용 (없으면 `temp/theme.json`)
 
 ## CLI 사용 예시
 
@@ -34,6 +36,7 @@ python orchestrator.py 20251222 -t NVDA AAPL
 # 단독 실행(중간 산출물 기반)
 python orchestrator.py 20251222 --agent opening
 python orchestrator.py 20251222 --agent theme
+python orchestrator.py 20251222 --agent ticker
 python orchestrator.py 20251222 --agent closing
 ```
 
@@ -43,10 +46,12 @@ python orchestrator.py 20251222 --agent closing
 flowchart TD
   GP["global_prefetch_node"] --> O["opening_node"]
   O -->|"stage >= 1"| T["theme_node"]
-  T -->|"stage >= 2"| C["closing_node"]
+  T -->|"stage >= 2"| K["ticker_pipeline_node"]
+  K -->|"stage >= 3"| C["closing_node"]
 
   O -->|"stage = 0"| CC["cleanup_cache_node"]
   T -->|"stage = 1"| CC
+  K -->|"stage = 2"| CC
   C --> CC
 
   CC --> E(["END"])
@@ -60,6 +65,7 @@ sequenceDiagram
   participant PF as "global_prefetch_node"
   participant OA as "OpeningAgent"
   participant TA as "ThemeAgent"
+  participant TP as "TickerPipeline"
   participant CA as "ClosingAgent"
   participant FS as "Filesystem"
 
@@ -79,6 +85,13 @@ sequenceDiagram
   end
 
   alt stage >= 2
+    CLI->>TP: invoke
+    TP->>FS: read cache/{date}/... (via tools)
+    TP->>FS: write temp/debate/{date}/*_debate.json
+    TP->>FS: write temp/ticker_pipeline.json
+  end
+
+  alt stage >= 3
     CLI->>CA: invoke
     CA->>FS: read cache/{date}/... (via tools)
     CA->>FS: write temp/closing.json
@@ -103,7 +116,11 @@ cache/{YYYYMMDD}/              # 실행 중 생성되는 공유 캐시(종료 �
 temp/                          # 단계 분리(standalone)용 중간 산출물(유지)
   opening.json
   theme.json
+  ticker_pipeline.json
   closing.json
+  debate/
+    {YYYYMMDD}/
+      {TICKER}_debate.json
 
 Podcast/{YYYYMMDD}/
   script.json                  # 최종 산출물(TTS 입력)
@@ -137,12 +154,12 @@ BriefingState:
   user_tickers: string[]          # CLI (-t/--tickers)
   nutshell: string                # produced by OpeningAgent
   themes: Theme[]                 # produced by OpeningAgent
-  scripts: ScriptTurn[]           # accumulated scripts (opening + theme + closing)
+  scripts: ScriptTurn[]           # accumulated scripts (opening + theme + ticker + closing)
   current_section: string         # internal marker
   chapter: ChapterRange[]         # scripts[].id ranges for each chapter
 
 ChapterRange:
-  name: enum["opening", "theme", "closing"]
+  name: enum["opening", "theme", "ticker", "closing"]
   start_id: integer               # inclusive (or -1 when empty)
   end_id: integer                 # inclusive (or -1 when empty)
 ```
@@ -157,8 +174,8 @@ ChapterRange:
   "required": ["date"],
   "properties": {
     "date": { "type": "string", "description": "YYYYMMDD or YYYY-MM-DD (normalized to YYYYMMDD)." },
-    "stage": { "type": "integer", "enum": [0, 1, 2], "default": 2 },
-    "agent": { "type": ["string", "null"], "enum": ["opening", "theme", "closing"], "default": null },
+    "stage": { "type": "integer", "enum": [0, 1, 2, 3], "default": 3 },
+    "agent": { "type": ["string", "null"], "enum": ["opening", "theme", "ticker", "closing"], "default": null },
     "tickers": { "type": "array", "items": { "type": "string" }, "description": "Space- or comma-separated." }
   },
   "additionalProperties": false
@@ -227,6 +244,5 @@ ChapterRange:
 ## 에러 처리 및 재실행 특성
 
 - `cleanup_cache_node()` + `main()`의 `finally`에서 `cleanup_cache_dir()`가 호출되어, 정상/비정상 종료 모두 `cache/{date}`가 정리됩니다.
-- Theme/Closing 단독 실행은 `temp/` 중간 산출물에 의존합니다.
+- Theme/Ticker/Closing 단독 실행은 `temp/` 중간 산출물에 의존합니다.
   - 파일이 없으면 해당 에이전트 그래프가 `FileNotFoundError`로 실패합니다.
-

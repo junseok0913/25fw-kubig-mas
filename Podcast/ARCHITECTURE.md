@@ -42,7 +42,7 @@ Podcast/
 - Consumer: `TTS/src/tts.py`
 - 포함 정보(요약):
   - `date`, `nutshell`, `user_tickers`
-  - `chapter[]`: opening/theme/closing 챕터 범위
+  - `chapter[]`: opening/theme/ticker/closing 챕터 범위
   - `scripts[]`: `{id, speaker, text, sources...}`
 
 ### `Podcast/{date}/tts/timeline.json`
@@ -96,4 +96,3 @@ turn별 오디오 파일(`tts/*.wav`)을 시간축으로 배치하기 위한 메
 1) Orchestrator 실행 → `Podcast/{date}/script.json` 생성
 2) TTS 실행 → `Podcast/{date}/tts/*.wav`, `timeline.json`, `{date}.wav`, `{date}.json` 생성
 3) `Podcast/podcast.db`에서 해당 날짜 행이 `tts_done=true`로 갱신
-

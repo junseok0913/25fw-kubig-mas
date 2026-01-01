@@ -52,7 +52,6 @@ orchestrator.py
 debate/
   graph.py                    # 티커 1개 디베이트 실행 (4 expert + moderator, tools 포함)
   prompt_new.py               # 디베이트 프롬프트(역할별/중재자, XML 스타일)
-  sec_tools.py                # (debate-local) SEC filing tools + 캐싱 + page index 요약
   ticker_script.py            # fan-out worker → merge → refiner (LLM은 tool-less)
   prompt/
     ticker_script_worker.yaml # tool-less 티커 스크립트 작성 프롬프트(XML 스타일)
@@ -61,6 +60,7 @@ debate/
 shared/
   tools/ohlcv.py              # get_ohlcv (debate에서 30d 1d + 당일 5m 요약, ticker_script에서 당일 5m context 주입)
   tools/news.py               # get_news_list/get_news_content (debate expert tool-call)
+  tools/sec_filings.py        # get_sec_filing_list/get_sec_filing_content (SEC, 캐싱 + page index 요약)
 ```
 
 런타임 아티팩트(제안)
@@ -189,7 +189,7 @@ temp/
 - Shared tools
   - `get_news_list`, `get_news_content` (`shared/tools/news.py`)
   - `get_ohlcv` (`shared/tools/ohlcv.py`)
-- Debate-local SEC tools *(debate에서만)*: `debate/sec_tools.py`
+- SEC tools *(debate에서만 사용)*: `shared/tools/sec_filings.py`
   - `get_sec_filing_list(ticker, forms?, limit?)`
   - `get_sec_filing_content(ticker, accession_numbers, page?)`
 
@@ -218,4 +218,3 @@ cache/{YYYYMMDD}/sec/
 5. E2E 확인
    - `python orchestrator.py 20251222 --stage 3 -t GOOG`
    - 결과: `Podcast/20251222/script.json`에 (opening+theme+tickers+closing) 순서로 `scripts`가 누적되는지 확인
-

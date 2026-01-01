@@ -118,6 +118,32 @@ def _normalize_sources(raw_sources: Any, *, turn_index: int) -> List[Dict[str, A
             )
             continue
 
+        if st == "sec_filing":
+            if not _is_nonempty_str(src.get("ticker")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: sec_filing.ticker 누락", turn_index, src_index)
+                continue
+            if not _is_nonempty_str(src.get("form")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: sec_filing.form 누락", turn_index, src_index)
+                continue
+            if not _is_valid_date_yyyy_mm_dd(src.get("filed_date")):
+                logger.warning("ScriptTurn[%d].sources[%d] drop: sec_filing.filed_date 누락/형식 오류", turn_index, src_index)
+                continue
+            if not _is_nonempty_str(src.get("accession_number")):
+                logger.warning(
+                    "ScriptTurn[%d].sources[%d] drop: sec_filing.accession_number 누락", turn_index, src_index
+                )
+                continue
+            out.append(
+                {
+                    "type": "sec_filing",
+                    "ticker": str(src["ticker"]).strip(),
+                    "form": str(src["form"]).strip(),
+                    "filed_date": str(src["filed_date"]).strip(),
+                    "accession_number": str(src["accession_number"]).strip(),
+                }
+            )
+            continue
+
         logger.warning("ScriptTurn[%d].sources[%d] drop: 알 수 없는 type=%r", turn_index, src_index, st)
 
     return out

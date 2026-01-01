@@ -26,7 +26,7 @@ from langgraph.prebuilt import ToolNode
 from shared.config import cleanup_cache_dir, ensure_cache_dir, normalize_date, set_briefing_date
 from shared.fetchers import prefetch_all
 from shared.normalization import parse_json_from_response
-from shared.tools import get_news_content, get_news_list, get_ohlcv
+from shared.tools import get_news_content, get_news_list, get_ohlcv, get_sec_filing_content, get_sec_filing_list
 from shared.utils.llm import build_llm
 from shared.utils.tracing import configure_tracing
 
@@ -41,7 +41,6 @@ from .prompt_new import (
     MODERATOR_USER_TEMPLATE,
     ROLE_DISPLAY_NAME,
 )
-from .sec_tools import get_sec_filing_content, get_sec_filing_list
 from .types import DebateAction, DebateConclusion, DebateRound, DebateUtterance, Source, TickerDebateOutput, TickerDebateState
 
 logger = logging.getLogger(__name__)

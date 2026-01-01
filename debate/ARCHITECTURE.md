@@ -50,7 +50,7 @@ flowchart TD
 
 ### 2.1 `Source` 스키마
 
-기본적으로 `shared/types.py`의 `article|chart|event`를 그대로 쓰고, **debate 프로토타입에서만** `sec_filing`을 추가로 허용합니다 (`debate/types.py`).
+기본적으로 `shared/types.py`의 `article|chart|event|sec_filing` 스키마를 사용합니다.
 
 ```json
 // article
@@ -62,7 +62,7 @@ flowchart TD
 // event (현재 debate에서는 기본 제공하지 않지만 스키마는 허용)
 { "type": "event", "id": "123", "title": "...", "date": "YYYY-MM-DD" }
 
-// sec_filing (debate 전용)
+// sec_filing
 { "type": "sec_filing", "ticker": "GOOG", "form": "10-K", "filed_date": "YYYY-MM-DD", "accession_number": "000..." }
 ```
 
@@ -120,7 +120,7 @@ flowchart TD
 
 #### 왜 `SEC_USER_AGENT`가 필요한가?
 SEC EDGAR는 **요청 식별을 위한 User-Agent 헤더(연락처 포함)**를 요구합니다. 일반적인/빈 User-Agent는 403(Forbidden)으로 차단될 수 있으며, 요청 폭주/오남용 대응 및 운영 이슈 연락을 위해 필요합니다.  
-따라서 `debate/sec_tools.py`는 `SEC_USER_AGENT`가 없으면 명시적으로 실패하도록 설계했습니다.
+따라서 `shared/tools/sec_filings.py`는 `SEC_USER_AGENT`가 없으면 명시적으로 실패하도록 설계했습니다.
 
 ## 5) Tool 스키마 & 동작 원리
 
@@ -205,9 +205,9 @@ SEC EDGAR는 **요청 식별을 위한 User-Agent 헤더(연락처 포함)**를 
 ```
 - 원리: yfinance로 조회 후 정규화(`MAX_OHLCV_ROWS` 초과 시 `too_many_rows`로 실패 응답).
 
-### 5.4 `get_sec_filing_list` (debate-local)
+### 5.4 `get_sec_filing_list` (shared tool, SEC)
 
-- 파일: `debate/sec_tools.py`
+- 파일: `shared/tools/sec_filings.py`
 - 입력(JSON):
 ```json
 { "ticker": "GOOG", "forms": ["10-K", "10-Q"], "limit": 6 }
@@ -235,9 +235,9 @@ SEC EDGAR는 **요청 식별을 위한 User-Agent 헤더(연락처 포함)**를 
   - `https://data.sec.gov/submissions/CIK{cik}.json`로 최근 공시 목록 조회(캐시)
   - form 필터/limit 적용 후 반환
 
-### 5.5 `get_sec_filing_content` (debate-local)
+### 5.5 `get_sec_filing_content` (shared tool, SEC)
 
-- 파일: `debate/sec_tools.py`
+- 파일: `shared/tools/sec_filings.py`
 - 입력(JSON):
 ```json
 { "ticker": "GOOG", "accession_numbers": ["0001652044-25-000091"] }

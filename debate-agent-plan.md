@@ -67,7 +67,8 @@ flowchart TD
 ### 3.2 Stage/Agent 모드 고려(행동 정의)
 
 - `--stage 0/1`: 기존 동작 유지(Closing 이전이므로 실행되지 않음)
-- `--stage 2`: Theme 이후에 `UserTickerDebateStage`를 실행한 뒤 Closing 진행
+- `--stage 2`: Theme 이후에 `UserTickerDebateStage`(=TickerPipeline)를 실행하고 종료 (Closing 제외)
+- `--stage 3`: Theme → TickerPipeline 실행 후 Closing 진행
 - (선택) `--agent ticker`: 티커 단계만 단독 실행을 지원하려면, `temp/theme.json`을 입력으로 로드하는 독립 경로가 필요
 
 ---
