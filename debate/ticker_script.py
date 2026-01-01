@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,7 @@ from shared.config import normalize_date, set_briefing_date
 from shared.normalization import parse_json_from_response
 from shared.tools import get_ohlcv
 from shared.utils.llm import build_llm
+from shared.yaml_config import load_env_from_yaml
 
 from .types import Source as DebateSource
 
@@ -558,6 +560,7 @@ def run_ticker_script_pipeline(
     base_scripts: List[TickerScriptTurn],
     debate_outputs: List[Dict[str, Any]],
 ) -> TickerScriptPipelineOutput:
+    load_env_from_yaml()
     load_dotenv(ROOT_DIR / ".env", override=False)
 
     date_norm = normalize_date(date)
@@ -687,11 +690,17 @@ def main(argv: List[str] | None = None) -> int:
         default=None,
         help="Debate output JSON file paths (same order as tickers). If omitted, run debate internally.",
     )
-    parser.add_argument("--max-rounds", type=int, default=2)
+    parser.add_argument(
+        "--max-rounds",
+        type=int,
+        default=None,
+        help="Max debate rounds (overrides DEBATE_MAX_ROUNDS env when provided).",
+    )
     parser.add_argument("--no-prefetch", action="store_true", help="If running debate, do not run prefetch_all.")
     parser.add_argument("--output", type=str, default=None, help="Write full pipeline output JSON to this path.")
     args = parser.parse_args(argv)
 
+    load_env_from_yaml()
     load_dotenv(ROOT_DIR / ".env", override=False)
 
     date_norm = normalize_date(args.date)
@@ -702,6 +711,11 @@ def main(argv: List[str] | None = None) -> int:
     tickers = [str(t).upper().strip() for t in args.tickers if str(t).strip()]
     if not tickers:
         raise ValueError("tickers가 비어 있습니다.")
+
+    try:
+        max_rounds = int(args.max_rounds) if args.max_rounds is not None else int(os.getenv("DEBATE_MAX_ROUNDS", "2"))
+    except Exception:
+        max_rounds = 2
 
     debate_outputs: List[Dict[str, Any]] = []
     if args.debate_json:
@@ -720,7 +734,7 @@ def main(argv: List[str] | None = None) -> int:
                 run_debate(
                     date=date_norm,
                     ticker=t,
-                    max_rounds=int(args.max_rounds),
+                    max_rounds=max_rounds,
                     prefetch=not args.no_prefetch,
                     cleanup=False,
                 )

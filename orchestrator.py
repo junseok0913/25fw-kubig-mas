@@ -45,6 +45,7 @@ from shared.config import (
 from shared.fetchers import prefetch_all
 from shared.types import ScriptTurn, Theme
 from shared.utils.tracing import configure_tracing
+from shared.yaml_config import load_env_from_yaml
 
 ROOT = Path(__file__).parent
 
@@ -467,6 +468,7 @@ def build_orchestrator(stage: int = 3, agent: AgentName | None = None):
             "ticker" - Ticker Pipeline만 실행 (global_prefetch/cleanup 포함, temp/theme.json 필요)
             "closing" - ClosingAgent만 실행 (global_prefetch/cleanup 포함, temp/ticker_pipeline.json 우선, 없으면 temp/theme.json)
     """
+    load_env_from_yaml()
     load_dotenv(ROOT / ".env", override=False)
     configure_tracing()
     graph = StateGraph(BriefingState)

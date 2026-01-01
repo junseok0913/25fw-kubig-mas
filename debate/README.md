@@ -28,24 +28,28 @@
 }
 ```
 
-`rounds[*].{role}.sources`는 프로젝트의 `ScriptTurn.sources`와 동일 스키마(`article|chart|event`)를 사용합니다.
-추가로, `debate/` 프로토타입에서는 근거 보강을 위해 `sec_filing` source를 포함할 수 있습니다 (메인 파이프라인에 합치기 전 단계).
+`rounds[*].{role}.sources`는 프로젝트의 `ScriptTurn.sources`와 동일 스키마(`article|chart|event|sec_filing`)를 사용합니다.
 
 ## 실행 방법
 
 ### 1) 가장 간단한 실행(권장)
 
 `OPENAI_API_KEY`가 설정되어 있어야 합니다.
+비밀이 아닌 설정(모델/라운드/timeout 등)은 `config/app.yaml`로 관리할 수 있습니다. (비밀키는 `.env` 권장)
 SEC EDGAR를 호출하는 경우 `SEC_USER_AGENT` 설정을 권장합니다.
 `SEC_USER_AGENT`가 없으면 SEC 공시 목록은 자동으로 비워진 채로 진행됩니다.
 
 ```bash
-python -m debate.graph 20251222 GOOG --max-rounds 2
+python -m debate.graph 20251222 GOOG
 ```
 
 - 기본값으로 `cache/{date}/news_list.json`이 없으면 `prefetch_all()`을 실행해 캐시를 채우려고 시도합니다.
 - AWS/DynamoDB/S3 접근 권한이 없다면 이 단계에서 실패할 수 있습니다.
-- 최소 2라운드를 강제합니다(기본값/권장값도 2). 즉 `--max-rounds 1`로 실행해도 2라운드가 수행됩니다.
+- 라운드는 **env로 관리**합니다:
+  - `DEBATE_MIN_ROUNDS` (최소 2라운드 강제)
+  - `DEBATE_MAX_ROUNDS` (최대 라운드)
+  - `DEBATE_CONSENSUS_CONFIDENCE` (합의 임계치)
+  - `--max-rounds N`을 주면 `DEBATE_MAX_ROUNDS`를 임시로 오버라이드합니다.
 
 ### 2) 캐시가 이미 있을 때(네트워크/AWS 최소화)
 
@@ -64,7 +68,8 @@ python -m debate.graph 20251222 GOOG --max-rounds 2 --no-prefetch
 SEC 캐시(자동 생성):
 - `cache/{date}/sec/company_tickers.json`
 - `cache/{date}/sec/submissions_CIK{cik}.json`
-- `cache/{date}/sec/filings/{ticker}_{accessionNoDash}.txt` (LLM 입력용으로 정리/절단된 텍스트)
+- `cache/{date}/sec/filings_full/{ticker}_{accessionNoDash}.txt` (LLM 입력용 정리/절단 원문)
+- `cache/{date}/sec/filings_index/{ticker}_{accessionNoDash}.json` (페이지별 요약 index)
 
 ### 3) 도움말
 

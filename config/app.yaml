@@ -1,0 +1,98 @@
+# Non-secret runtime configuration (YAML → os.environ).
+#
+# - Secret keys stay in `.env` (ignored from this YAML even if present).
+# - Keep env var names to avoid refactoring existing code.
+#
+# NOTE: SEC_USER_AGENT은 ':'가 포함될 수 있으니 반드시 따옴표로 감싸세요.
+
+secrets:
+  # Secrets: set these only in `.env` (or real environment variables).
+  OPENAI_API_KEY: null
+  GEMINI_API_KEY: null
+  LANGSMITH_API_KEY: null
+
+env:
+  # Gemini TTS
+  GEMINI_TTS_MODEL: "models/gemini-2.5-flash-preview-tts"
+
+  # OpenAI global defaults
+  OPENAI_MODEL: "gpt-5.1"
+  OPENAI_REASONING_EFFORT: "medium"
+  OPENAI_TEMPERATURE: 0.3
+  OPENAI_TIMEOUT: 300
+  OPENAI_MAX_RETRIES: 2
+
+  # OpeningAgent overrides
+  OPENING_OPENAI_MODEL: "gpt-5.1"
+  OPENING_OPENAI_REASONING_EFFORT: "medium"
+  OPENING_OPENAI_TEMPERATURE: ""
+  OPENING_OPENAI_TIMEOUT: 300
+  OPENING_OPENAI_MAX_RETRIES: 1
+
+  # ThemeAgent overrides (worker/refiner)
+  THEME_WORKER_OPENAI_MODEL: "gpt-5.1"
+  THEME_WORKER_OPENAI_REASONING_EFFORT: "medium"
+  THEME_WORKER_OPENAI_TEMPERATURE: ""
+  THEME_WORKER_OPENAI_TIMEOUT: 300
+  THEME_WORKER_OPENAI_MAX_RETRIES: 1
+
+  THEME_REFINER_OPENAI_MODEL: "gpt-5.1"
+  THEME_REFINER_OPENAI_REASONING_EFFORT: "none"
+  THEME_REFINER_OPENAI_TEMPERATURE: ""
+  THEME_REFINER_OPENAI_TIMEOUT: 300
+  THEME_REFINER_OPENAI_MAX_RETRIES: 1
+
+  # (compat) extra refiner timeout
+  OPENAI_REFINER_TIMEOUT: ""
+
+  # ClosingAgent overrides
+  CLOSING_OPENAI_MODEL: ""
+  CLOSING_OPENAI_REASONING_EFFORT: ""
+  CLOSING_OPENAI_TEMPERATURE: ""
+  CLOSING_OPENAI_TIMEOUT: ""
+  CLOSING_OPENAI_MAX_RETRIES: ""
+
+  # AWS (news/calendar/market context)
+  AWS_SDK_LOAD_CONFIG: 1
+  AWS_PROFILE: "Admins"
+  AWS_REGION: "ap-northeast-2"
+
+  # News sources
+  NEWS_TABLE: "kubig-YahoofinanceNews"
+  NEWS_BUCKET: "kubig-yahoofinancenews"
+  NEWS_BODY_MAX_CHARS: 0
+
+  # LangSmith (tracing)
+  LANGSMITH_TRACING_V2: true
+  LANGSMITH_PROJECT: "kubig"
+  LANGSMITH_ENDPOINT: null
+
+  # SEC EDGAR (shared/tools/sec_filings.py)
+  SEC_USER_AGENT: "ehddus416@korea.ac.kr"
+
+  # Debate rounds/consensus
+  DEBATE_MIN_ROUNDS: 2
+  DEBATE_MAX_ROUNDS: 4
+  DEBATE_CONSENSUS_CONFIDENCE: 0.7
+
+  # Debate role LLM overrides
+  DEBATE_FUNDAMENTAL_OPENAI_MODEL: "gpt-5.1"
+  DEBATE_FUNDAMENTAL_OPENAI_REASONING_EFFORT: "low"
+  DEBATE_RISK_OPENAI_MODEL: "gpt-5.1"
+  DEBATE_RISK_OPENAI_REASONING_EFFORT: "low"
+  DEBATE_GROWTH_OPENAI_MODEL: "gpt-5.1"
+  DEBATE_GROWTH_OPENAI_REASONING_EFFORT: "low"
+  DEBATE_SENTIMENT_OPENAI_MODEL: "gpt-5.1"
+  DEBATE_SENTIMENT_OPENAI_REASONING_EFFORT: "low"
+  DEBATE_MODERATOR_OPENAI_MODEL: "gpt-5.1"
+  DEBATE_MODERATOR_OPENAI_REASONING_EFFORT: "low"
+
+  # SEC filing page-summary model (shared/tools/sec_filings.py)
+  SEC_PAGE_SUMMARY_MODEL: "gpt-5-mini"
+
+  # Ticker script worker/refiner (debate/ticker_script.py)
+  TICKER_SCRIPT_WORKER_OPENAI_MODEL: "gpt-5.1"
+  TICKER_SCRIPT_WORKER_OPENAI_REASONING_EFFORT: "none"
+  TICKER_SCRIPT_REFINER_OPENAI_MODEL: "gpt-5.1"
+  TICKER_SCRIPT_REFINER_OPENAI_REASONING_EFFORT: "none"
+

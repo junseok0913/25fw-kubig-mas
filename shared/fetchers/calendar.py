@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 from shared.config import ROOT_DIR
+from shared.yaml_config import load_env_from_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ _CAL_DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def _load_env() -> None:
+    load_env_from_yaml()
     load_dotenv(ROOT_DIR / ".env", override=False)
 
 

@@ -2,6 +2,15 @@
 
 `orchestrator.py`는 장마감 브리핑을 위한 상위 LangGraph 오케스트레이터입니다. 실행 시점에 필요한 데이터를 한 번에 프리페치(`cache/{date}/`)하고, 에이전트(Opening → Theme → TickerPipeline → Closing)를 순차 실행한 뒤 결과를 저장합니다.
 
+## 설정(ENV / YAML)
+
+이 프로젝트는 기존의 `.env` 기반 설정을 유지하면서, **비밀이 아닌 설정값은 YAML로도 관리**할 수 있습니다.
+
+- 비밀키(권장: `.env`): `OPENAI_API_KEY`, `GEMINI_API_KEY`, `LANGSMITH_API_KEY`
+- 비밀이 아닌 설정(권장: YAML): `config/app.yaml` (모델, timeout, AWS 프로필, Debate 라운드 등)
+- 로딩 우선순위: (쉘에서 export한 환경변수) > (`config/app.yaml`) > (`.env`, `override=False`)
+- 선택: `APP_CONFIG_PATH`를 export하면 다른 YAML 경로를 사용할 수 있습니다.
+
 ## 실행 모드
 
 ### Stage 모드 (`--stage`)

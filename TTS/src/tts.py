@@ -37,12 +37,14 @@ from .state import TTSState
 from .utils.script import parse_date_arg
 from .utils.gemini_tts import get_model_path
 from .utils.tracing import configure_tracing
+from shared.yaml_config import load_env_from_yaml
 
 logger = logging.getLogger(__name__)
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 
 def build_graph():
+    load_env_from_yaml(logger=logger)
     load_dotenv(ROOT_DIR / ".env", override=False)
     graph = StateGraph(TTSState)
     graph.add_node("load_config", load_config_node)
@@ -109,6 +111,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         logger.error("날짜 파싱 실패: %s", e)
         return 2
 
+    load_env_from_yaml(logger=logger)
     load_dotenv(ROOT_DIR / ".env", override=False)
     configure_tracing(logger=logger)
 

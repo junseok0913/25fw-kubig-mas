@@ -29,6 +29,7 @@ from shared.normalization import parse_json_from_response
 from shared.tools import get_news_content, get_news_list, get_ohlcv, get_sec_filing_content, get_sec_filing_list
 from shared.utils.llm import build_llm
 from shared.utils.tracing import configure_tracing
+from shared.yaml_config import load_env_from_yaml
 
 from .prompt_new import (
     EXPERT_AVAILABLE_TOOLS,
@@ -667,6 +668,7 @@ def debate_init_node(state: TickerDebateState) -> TickerDebateState:
 
 
 def build_graph():
+    load_env_from_yaml(logger=logger)
     load_dotenv(ROOT_DIR / ".env", override=False)
     configure_tracing(logger=logger)
 
@@ -731,16 +733,26 @@ def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Ticker debate (multi-agent, outputs compact JSON)")
     parser.add_argument("date", type=str, help="YYYYMMDD or YYYY-MM-DD")
     parser.add_argument("ticker", type=str, help="Ticker symbol (e.g., GOOG)")
-    parser.add_argument("--max-rounds", type=int, default=2)
+    parser.add_argument(
+        "--max-rounds",
+        type=int,
+        default=None,
+        help="Max debate rounds (overrides DEBATE_MAX_ROUNDS env when provided).",
+    )
     parser.add_argument("--no-prefetch", action="store_true", help="Do not run prefetch_all; require existing cache/{date}.")
     parser.add_argument("--cleanup", action="store_true", help="Cleanup cache/{date} after run (temp outputs unaffected).")
     args = parser.parse_args(argv)
 
     try:
+        max_rounds = int(args.max_rounds) if args.max_rounds is not None else int(os.getenv("DEBATE_MAX_ROUNDS", "2"))
+    except Exception:
+        max_rounds = 2
+
+    try:
         out = run_debate(
             date=args.date,
             ticker=args.ticker,
-            max_rounds=args.max_rounds,
+            max_rounds=max_rounds,
             prefetch=not args.no_prefetch,
             cleanup=args.cleanup,
         )
