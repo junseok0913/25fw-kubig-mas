@@ -37,6 +37,7 @@ from shared.tools import (
 from shared.types import ScriptTurn, Theme
 from shared.utils.llm import build_llm
 from shared.utils.tracing import configure_tracing
+from shared.yaml_config import load_env_from_yaml
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ class ThemeState(TypedDict, total=False):
 # ==== 공통 유틸 ====
 
 def _load_env() -> None:
+    load_env_from_yaml()
     load_dotenv(ROOT_DIR / ".env", override=False)
 
 

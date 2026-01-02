@@ -1,16 +1,18 @@
 """
 상위 LangGraph 오케스트레이터.
 
-OpeningAgent → ThemeAgent → ClosingAgent 순서로 에이전트를 실행하는 그래프를 구성한다.
+OpeningAgent → ThemeAgent → (UserTicker Pipeline) → ClosingAgent 순서로 에이전트를 실행하는 그래프를 구성한다.
 --stage 옵션으로 어느 에이전트까지 실행할지 제어할 수 있다.
 
 Usage:
     python orchestrator.py 20251125                # ClosingAgent까지 실행 (기본값)
     python orchestrator.py 2025-11-25 --stage 0    # OpeningAgent만 실행
     python orchestrator.py 20251125 --stage 1      # ThemeAgent까지 실행
-    python orchestrator.py 20251125 --stage 2      # ClosingAgent까지 실행
+    python orchestrator.py 20251125 --stage 2      # UserTicker Pipeline까지 실행 (Closing 제외)
+    python orchestrator.py 20251125 --stage 3      # ClosingAgent까지 실행
     python orchestrator.py 20251125 --agent theme  # ThemeAgent만 실행 (temp/opening.json 필요)
-    python orchestrator.py 20251125 --agent closing # ClosingAgent만 실행 (temp/theme.json 필요)
+    python orchestrator.py 20251125 --agent ticker # Ticker Pipeline만 실행 (temp/theme.json 필요)
+    python orchestrator.py 20251125 --agent closing # ClosingAgent만 실행 (temp/ticker_pipeline.json 우선, 없으면 temp/theme.json)
     python orchestrator.py 20251125 -t NVDA AAPL   # 사용자 티커 전달
 """
 
@@ -18,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -30,10 +33,19 @@ from agents.closing import graph as closing_graph
 from agents.opening import graph as opening_graph
 from agents.theme import graph as theme_graph
 from podcast_db import get_default_db_path, upsert_script_row, utc_iso_from_timestamp
-from shared.config import cleanup_cache_dir, ensure_cache_dir, get_temp_opening_path, set_briefing_date
+from shared.config import (
+    cleanup_cache_dir,
+    ensure_cache_dir,
+    ensure_temp_dir,
+    get_temp_opening_path,
+    get_temp_theme_path,
+    get_temp_ticker_pipeline_path,
+    set_briefing_date,
+)
 from shared.fetchers import prefetch_all
 from shared.types import ScriptTurn, Theme
 from shared.utils.tracing import configure_tracing
+from shared.yaml_config import load_env_from_yaml
 
 ROOT = Path(__file__).parent
 
@@ -84,8 +96,8 @@ def format_date_korean(date_yyyymmdd: str) -> str:
     return f"{dt.month}월 {dt.day}일"
 
 
-ChapterName = Literal["opening", "theme", "closing"]
-AgentName = Literal["opening", "theme", "closing"]
+ChapterName = Literal["opening", "theme", "ticker", "closing"]
+AgentName = Literal["opening", "theme", "ticker", "closing"]
 
 
 class ChapterRange(TypedDict):
@@ -99,7 +111,7 @@ def _empty_chapter(name: ChapterName) -> ChapterRange:
 
 
 def _init_chapter() -> List[ChapterRange]:
-    return [_empty_chapter("opening"), _empty_chapter("theme"), _empty_chapter("closing")]
+    return [_empty_chapter("opening"), _empty_chapter("theme"), _empty_chapter("ticker"), _empty_chapter("closing")]
 
 
 def _set_chapter_range(
@@ -142,7 +154,7 @@ class BriefingState(TypedDict, total=False):
     # Metadata
     current_section: str
 
-    # scripts[].id 기준 챕터 구간 (opening/theme/closing, inclusive)
+    # scripts[].id 기준 챕터 구간 (opening/theme/ticker/closing, inclusive)
     chapter: List[ChapterRange]
 
 
@@ -238,15 +250,151 @@ def theme_node(state: BriefingState) -> BriefingState:
         chapter = _set_chapter_range(chapter, "theme", opening_len, total_len - 1)
     else:
         chapter = _set_chapter_range(chapter, "theme", -1, -1)
+    chapter = _set_chapter_range(chapter, "ticker", -1, -1)
 
     return {
         **state,
         "nutshell": state.get("nutshell") or result.get("nutshell", ""),
         "themes": state.get("themes") or result.get("themes", []),
         "scripts": scripts if isinstance(scripts, list) else [],
-        "current_section": "closing",
+        "current_section": "ticker",
         "chapter": chapter,
     }
+
+
+def ticker_pipeline_node(state: BriefingState) -> BriefingState:
+    """UserTicker 기반: (ticker별 debate → ticker script worker/refiner) 를 실행해 scripts를 확장한다."""
+    date_str = state.get("date")
+    if not date_str:
+        raise ValueError("date 필드가 state에 없습니다. orchestrator 실행 시 날짜를 지정하세요.")
+
+    set_briefing_date(date_str)
+
+    # Ensure we have (opening+theme) base scripts.
+    scripts_input = state.get("scripts")
+    if not isinstance(scripts_input, list):
+        theme_path = get_temp_theme_path()
+        if not theme_path.exists():
+            raise FileNotFoundError(f"Theme 결과가 없습니다: {theme_path}")
+        payload = json.loads(theme_path.read_text(encoding="utf-8"))
+        scripts_input = payload.get("scripts", [])
+
+    base_scripts = scripts_input if isinstance(scripts_input, list) else []
+    base_len = len(base_scripts)
+
+    # Ensure nutshell/themes exist when running standalone.
+    if not state.get("nutshell") or not state.get("themes"):
+        opening_path = get_temp_opening_path()
+        if opening_path.exists():
+            try:
+                opening_payload = json.loads(opening_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                opening_payload = {}
+            state = {
+                **state,
+                "nutshell": state.get("nutshell") or opening_payload.get("nutshell", ""),
+                "themes": state.get("themes") or opening_payload.get("themes", []),
+            }
+
+    # Normalize tickers (order preserved)
+    raw_tickers = state.get("user_tickers") or []
+    tickers = [str(t).upper().strip() for t in raw_tickers if str(t).strip()]
+
+    chapter = state.get("chapter")
+    if not isinstance(chapter, list):
+        chapter = _init_chapter()
+
+    # If chapter ranges are missing (standalone run), try reconstruct opening/theme boundaries.
+    opening_has_range = any(
+        isinstance(c, dict) and c.get("name") == "opening" and int(c.get("start_id", -1)) >= 0 for c in chapter
+    )
+    if not opening_has_range:
+        opening_path = get_temp_opening_path()
+        if opening_path.exists():
+            try:
+                opening_payload = json.loads(opening_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                opening_payload = {}
+            opening_scripts = opening_payload.get("scripts", [])
+            opening_len = len(opening_scripts) if isinstance(opening_scripts, list) else 0
+            chapter = _set_chapter_range(chapter, "opening", 0, opening_len - 1 if opening_len > 0 else -1)
+            if base_len > opening_len:
+                chapter = _set_chapter_range(chapter, "theme", opening_len, base_len - 1)
+            else:
+                chapter = _set_chapter_range(chapter, "theme", -1, -1)
+
+    if not tickers:
+        # Persist a "no-op" ticker pipeline artifact for debuggability/consistency.
+        pipeline_path = get_temp_ticker_pipeline_path()
+        pipeline_path.write_text(
+            json.dumps(
+                {
+                    "date": date_str,
+                    "user_tickers": [],
+                    "ticker_scripts": [],
+                    "ticker_sections": [],
+                    "refiner_edits": [],
+                    "scripts": base_scripts,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        chapter = _set_chapter_range(chapter, "ticker", -1, -1)
+        return {**state, "scripts": base_scripts, "current_section": "closing", "chapter": chapter}
+
+    # Fan-out: run debate per ticker, always persist debate artifacts.
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    from debate.graph import run_debate
+    from debate.ticker_script import run_ticker_script_pipeline
+
+    ensure_temp_dir()
+    debate_out_dir = ROOT / "temp" / "debate" / date_str
+    debate_out_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        max_rounds = int(os.getenv("DEBATE_MAX_ROUNDS", "2") or "2")
+    except Exception:
+        max_rounds = 2
+
+    debate_outputs: list[dict[str, Any]] = [None] * len(tickers)  # type: ignore[list-item]
+
+    def _run_one(ticker: str) -> dict[str, Any]:
+        return run_debate(date=date_str, ticker=ticker, max_rounds=max_rounds, prefetch=False, cleanup=False)
+
+    with ThreadPoolExecutor(max_workers=min(4, len(tickers))) as ex:
+        future_to_idx = {ex.submit(_run_one, t): i for i, t in enumerate(tickers)}
+        for fut in as_completed(future_to_idx):
+            idx = future_to_idx[fut]
+            ticker = tickers[idx]
+            out = fut.result()
+            debate_outputs[idx] = out
+            (debate_out_dir / f"{ticker}_debate.json").write_text(
+                json.dumps(out, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+    # Fan-out: ticker_script worker per ticker -> fan-in merge -> refiner
+    pipeline_out = run_ticker_script_pipeline(
+        date=date_str,
+        user_tickers=tickers,
+        base_scripts=base_scripts,
+        debate_outputs=debate_outputs,  # type: ignore[arg-type]
+    )
+
+    pipeline_path = get_temp_ticker_pipeline_path()
+    pipeline_path.write_text(json.dumps(pipeline_out, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    scripts = pipeline_out.get("scripts", [])
+    total_len = len(scripts) if isinstance(scripts, list) else 0
+    if total_len > base_len:
+        chapter = _set_chapter_range(chapter, "ticker", base_len, total_len - 1)
+    else:
+        chapter = _set_chapter_range(chapter, "ticker", -1, -1)
+
+    return {**state, "scripts": scripts if isinstance(scripts, list) else [], "current_section": "closing", "chapter": chapter}
 
 
 def closing_node(state: BriefingState) -> BriefingState:
@@ -305,25 +453,29 @@ def closing_node(state: BriefingState) -> BriefingState:
     }
 
 
-def build_orchestrator(stage: int = 2, agent: AgentName | None = None):
+def build_orchestrator(stage: int = 3, agent: AgentName | None = None):
     """상위 그래프를 컴파일한다.
     
     Args:
         stage: 실행할 에이전트 단계
             0 - OpeningAgent만 실행
             1 - ThemeAgent까지 실행
-            2 - ClosingAgent까지 실행 (기본값)
+            2 - UserTicker Pipeline까지 실행 (Closing 제외)
+            3 - ClosingAgent까지 실행 (기본값)
         agent: 단일 에이전트만 실행할 때 지정
             "opening" - OpeningAgent만 실행 (global_prefetch/cleanup 포함)
             "theme" - ThemeAgent만 실행 (global_prefetch/cleanup 포함, temp/opening.json 필요)
-            "closing" - ClosingAgent만 실행 (global_prefetch/cleanup 포함, temp/theme.json 필요)
+            "ticker" - Ticker Pipeline만 실행 (global_prefetch/cleanup 포함, temp/theme.json 필요)
+            "closing" - ClosingAgent만 실행 (global_prefetch/cleanup 포함, temp/ticker_pipeline.json 우선, 없으면 temp/theme.json)
     """
+    load_env_from_yaml()
     load_dotenv(ROOT / ".env", override=False)
     configure_tracing()
     graph = StateGraph(BriefingState)
     graph.add_node("global_prefetch", global_prefetch_node)
     graph.add_node("opening", opening_node)
     graph.add_node("theme", theme_node)
+    graph.add_node("ticker", ticker_pipeline_node)
     graph.add_node("closing", closing_node)
     graph.add_node("cleanup_cache", cleanup_cache_node)
     graph.set_entry_point("global_prefetch")
@@ -334,6 +486,9 @@ def build_orchestrator(stage: int = 2, agent: AgentName | None = None):
     elif agent == "theme":
         graph.add_edge("global_prefetch", "theme")
         graph.add_edge("theme", "cleanup_cache")
+    elif agent == "ticker":
+        graph.add_edge("global_prefetch", "ticker")
+        graph.add_edge("ticker", "cleanup_cache")
     elif agent == "closing":
         graph.add_edge("global_prefetch", "closing")
         graph.add_edge("closing", "cleanup_cache")
@@ -341,8 +496,12 @@ def build_orchestrator(stage: int = 2, agent: AgentName | None = None):
         if stage >= 1:
             graph.add_edge("opening", "theme")
             if stage >= 2:
-                graph.add_edge("theme", "closing")
-                graph.add_edge("closing", "cleanup_cache")
+                graph.add_edge("theme", "ticker")
+                if stage >= 3:
+                    graph.add_edge("ticker", "closing")
+                    graph.add_edge("closing", "cleanup_cache")
+                else:
+                    graph.add_edge("ticker", "cleanup_cache")
             else:
                 graph.add_edge("theme", "cleanup_cache")
         else:
@@ -364,6 +523,8 @@ def main() -> None:
     python orchestrator.py 2025-11-25
     python orchestrator.py 20251125 --stage 0  # OpeningAgent만 실행
     python orchestrator.py 20251125 --stage 1  # ThemeAgent까지 실행
+    python orchestrator.py 20251125 --stage 2  # UserTicker Pipeline까지 실행 (Closing 제외)
+    python orchestrator.py 20251125 --stage 3  # ClosingAgent까지 실행
         
 날짜는 EST(미국 동부 시간) 기준입니다.
         """
@@ -376,15 +537,15 @@ def main() -> None:
     parser.add_argument(
         "--stage",
         type=int,
-        default=2,
-        choices=[0, 1, 2],
-        help="실행할 에이전트 단계 (0: OpeningAgent만, 1: ThemeAgent까지, 2: ClosingAgent까지, 기본값: 2)"
+        default=3,
+        choices=[0, 1, 2, 3],
+        help="실행할 에이전트 단계 (0: Opening만, 1: Theme까지, 2: Ticker까지, 3: Closing까지, 기본값: 3)"
     )
     parser.add_argument(
         "--agent",
         type=str,
         default=None,
-        choices=["opening", "theme", "closing"],
+        choices=["opening", "theme", "ticker", "closing"],
         help="단일 에이전트만 실행 (stage를 무시, global_prefetch/cleanup 포함)",
     )
     parser.add_argument(
@@ -403,7 +564,7 @@ def main() -> None:
         print(f"오류: {e}", file=sys.stderr)
         sys.exit(1)
     
-    stage_names = {0: "OpeningAgent", 1: "ThemeAgent", 2: "ClosingAgent"}
+    stage_names = {0: "OpeningAgent", 1: "ThemeAgent", 2: "TickerPipeline", 3: "ClosingAgent"}
     date_korean = format_date_korean(date_yyyymmdd)
     print(f"=== {date_korean} 장마감 브리핑 시작 ===")
     print(f"날짜: {date_yyyymmdd} (EST)")
@@ -432,13 +593,13 @@ def main() -> None:
     }
     final_json = json.dumps(final_payload, ensure_ascii=False, indent=2)
 
-    # Podcast/{date}/script.json (TTS 파이프라인 입력)
-    podcast_dir = ROOT / "Podcast" / date_yyyymmdd
+    # podcast/{date}/script.json (TTS 파이프라인 입력)
+    podcast_dir = ROOT / "podcast" / date_yyyymmdd
     podcast_dir.mkdir(parents=True, exist_ok=True)
     podcast_script_path = podcast_dir / "script.json"
     podcast_script_path.write_text(final_json, encoding="utf-8")
 
-    # Podcast index DB 업데이트
+    # podcast index DB 업데이트
     upsert_script_row(
         db_path=get_default_db_path(ROOT),
         date=date_yyyymmdd,

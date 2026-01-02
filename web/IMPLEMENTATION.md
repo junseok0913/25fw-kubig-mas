@@ -15,7 +15,7 @@
 웹에서 필요한 데이터는 **두 가지**만:
 
 ```
-Podcast/
+podcast/
 ├── podcast.db              # 에피소드 목록 (메인 페이지)
 └── {YYYYMMDD}/
     ├── {YYYYMMDD}.json     # 에피소드 상세 (스크립트 + 타임라인)
@@ -45,7 +45,7 @@ interface Episode {
 }
 
 interface Chapter {
-  name: "opening" | "theme" | "closing";
+  name: "opening" | "theme" | "ticker" | "closing";
   start_id: number;
   end_id: number;
 }
@@ -59,7 +59,7 @@ interface Script {
 }
 
 interface Source {
-  type: "chart" | "article" | "event";
+  type: "chart" | "article" | "event" | "sec_filing";
   ticker?: string;
   start_date?: string;
   end_date?: string;
@@ -67,6 +67,9 @@ interface Source {
   title?: string;
   id?: string;
   date?: string;
+  form?: string;
+  filed_date?: string;
+  accession_number?: string;
 }
 ```
 
@@ -74,7 +77,7 @@ interface Source {
 
 ## Static Export 구조
 
-빌드 시 `Podcast/` 데이터를 `web/public/`으로 복사/변환:
+빌드 시 `podcast/` 데이터를 `web/public/`으로 복사/변환:
 
 ```
 web/public/

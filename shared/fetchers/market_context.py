@@ -16,6 +16,7 @@ import yfinance as yf
 from dotenv import load_dotenv
 
 from shared.config import ROOT_DIR
+from shared.yaml_config import load_env_from_yaml
 
 logger = logging.getLogger(__name__)
 KST = pytz.timezone("Asia/Seoul")
@@ -56,6 +57,7 @@ CRYPTO_SPEC = TickerSpec("Bitcoin", "BTC-USD")
 
 
 def _load_env() -> None:
+    load_env_from_yaml()
     load_dotenv(ROOT_DIR / ".env", override=False)
 
 

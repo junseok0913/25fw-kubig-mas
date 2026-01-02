@@ -5,7 +5,7 @@ ThemeAgent는 OpeningAgent가 생성한 `themes`를 기준으로 **테마별 심
 ## 전체 파이프라인에서의 역할
 
 - 오케스트레이터 Stage 실행:
-  - `--stage 1` 또는 `--stage 2`에서 ThemeAgent가 실행됩니다.
+  - `--stage 1/2/3`에서 ThemeAgent가 실행됩니다. (즉 stage >= 1)
 - 단독 실행:
   - ThemeAgent는 입력(`themes/base_scripts`)이 없으면 `temp/opening.json`을 읽어 자체적으로 초기 입력을 구성합니다.
   - 이 모드는 `python orchestrator.py ... --agent theme` 또는 `python -m agents.theme.graph ...`에서 사용됩니다.

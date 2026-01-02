@@ -96,3 +96,7 @@ def get_temp_theme_path() -> Path:
 
 def get_temp_closing_path() -> Path:
     return TEMP_DIR / "closing.json"
+
+
+def get_temp_ticker_pipeline_path() -> Path:
+    return TEMP_DIR / "ticker_pipeline.json"
