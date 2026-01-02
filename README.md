@@ -11,133 +11,257 @@ Team: `지피티야 팀명 추천해줘`
 
 ```mermaid
 flowchart TD
-  %% ==========================================================
-  %% AWS: News collection (EventBridge -> Lambda -> DynamoDB/S3)
-  %% ==========================================================
-  subgraph AWS["\"AWS: 뉴스 수집/저장\""]
-    AWS_EB["\"EventBridge Scheduler (30m)\""] --> AWS_LAMBDA["\"Lambda (container)\""]
-    AWS_LAMBDA --> AWS_UPLOAD["\"upload_db: list crawl → DynamoDB (idempotent)\""]
-    AWS_LAMBDA --> AWS_DETAIL["\"detail_crawl: page crawl → S3(XML) + DynamoDB update\""]
-    AWS_UPLOAD --> AWS_DDB["\"DynamoDB: NEWS_TABLE\""]
-    AWS_DETAIL --> AWS_S3["\"S3: NEWS_BUCKET (article XML)\""]
+  classDef ghost fill:#fff,stroke:#bbb,stroke-dasharray:3 3,color:#777;
+
+  subgraph AWS["AWS: 뉴스 수집/저장"]
+    direction LR
+    AWS_EB["EventBridge Scheduler (30m)"] --> AWS_LAMBDA["Lambda (container)"]
+    AWS_LAMBDA --> AWS_UPLOAD["upload_db: list crawl → DynamoDB (idempotent)"]
+    AWS_LAMBDA --> AWS_DETAIL["detail_crawl: page crawl → S3(XML) + DynamoDB update"]
+    AWS_UPLOAD --> AWS_DDB["DynamoDB: NEWS_TABLE"]
+    AWS_DETAIL --> AWS_S3["S3: NEWS_BUCKET (article XML)"]
     AWS_DETAIL --> AWS_DDB
   end
 
-  %% ==========================================================
-  %% Script pipeline: Orchestrator + Agents + TickerPipeline
-  %% ==========================================================
-  subgraph SCRIPT["\"Script Pipeline (Python + LangGraph)\""]
-    ORC["\"orchestrator.py\""] --> GP["\"global_prefetch_node\""]
-    GP --> OA_ENTRY["\"OpeningAgent\""]
-    OA_ENTRY --> TA_ENTRY["\"ThemeAgent\""]
-    TA_ENTRY --> TP_ENTRY["\"TickerPipeline\""]
-    TP_ENTRY --> CA_ENTRY["\"ClosingAgent\""]
-    CA_ENTRY --> OUT_SCRIPT["\"podcast/{date}/script.json\""]
-    OUT_SCRIPT -->|"\"podcast_db.upsert_script_row\""| OUT_DB
-    OUT_DB --> SCRIPT_CLEAN["\"cleanup_cache_node: cache/{date} 삭제\""] --> SCRIPT_END(["\"END\""])
+  subgraph ENTRY["Entry + Prefetch (한 번만)"]
+    direction LR
+    IN["입력<br/>date(YYYYMMDD) + user_tickers(optional)"] --> ORCH["orchestrator.py<br/>LangGraph(StateGraph)"]
+    ORCH --> PF["global_prefetch_node<br/>prefetch_all(date) → cache/{date}/...<br/>news_list.json, titles.txt, bodies/*<br/>calendar.csv, calendar.json<br/>market_context.json"]
+  end
 
-    %% ---------- Prefetch (shared/fetchers) ----------
-    subgraph PREFETCH["\"prefetch_all (shared/fetchers)\""]
-      PF_NEWS["\"news: DynamoDB → cache/{date}/news_list.json\""]
-      PF_CAL["\"calendar: TradingEconomics → cache/{date}/calendar.csv/json\""]
-      PF_MKT["\"market_context: yfinance → cache/{date}/market_context.json\""]
+  PF --> OA
+
+  subgraph AGENTS["Agents (스크립트 생성)"]
+    direction LR
+    OA["OpeningAgent"] --> TA["ThemeAgent"] --> CO["CompanyAgent<br/>(TickerPipeline: ticker별 분석 + 대본 생성)"] --> CA["ClosingAgent"]
+
+    subgraph OAD["OpeningAgent 내부"]
+      direction LR
+      OA_LC["load_context_node"] --> OA_PM["prepare_initial_messages"] --> OA_A["agent (ReAct)"]
+      OA_A -->|tool_calls| OA_T["ToolNode(TOOLS)"]
+      OA_T --> OA_A
+      OA_A -->|final| OA_EX["extract_script_node<br/>themes + nutshell + opening scripts"]
     end
-    GP --> PF_NEWS
-    GP --> PF_CAL
-    GP --> PF_MKT
 
-    %% ---------- OpeningAgent (agents/opening/graph.py) ----------
-    subgraph OPENING["\"OpeningAgent (agents/opening/graph.py)\""]
-      OA_LC["\"load_context_node\""] --> OA_PM["\"prepare_initial_messages\""] --> OA_LLM["\"agent_node: LLM (tools)\""]
-      OA_LLM -->|"\"tool_calls\""| OA_TOOLS["\"ToolNode(TOOLS)\""] --> OA_LLM
-      OA_LLM -->|"\"final\""| OA_EX["\"extract_script_node\""]
-      OA_EX --> TEMP_OPEN["\"temp/opening.json\""]
-    end
-    OA_ENTRY --> OA_LC
+    subgraph TAD["ThemeAgent 내부 (Fan-out / Fan-in)"]
+      direction LR
+      TA_LB["load_base_from_temp"] --> TA0["Fan-out: run_theme_workers<br/>batch(..., return_exceptions=True)"]
 
-    %% ---------- ThemeAgent (agents/theme/graph.py) ----------
-    subgraph THEME["\"ThemeAgent (agents/theme/graph.py)\""]
-      TA_LB["\"load_base_from_temp\""] --> TA_RW["\"run_theme_workers (fan-out)\""] --> TA_MS["\"merge_scripts\""] --> TA_REF["\"refine_transitions\""]
-      TA_REF --> TEMP_THEME["\"temp/theme.json\""]
+      subgraph TWPAR["ThemeWorkerGraph 병렬 실행 (테마별)"]
+        direction LR
 
-      subgraph THEME_WORKER["\"ThemeWorkerGraph (per theme)\""]
-        TW_LC["\"load_context_node\""] --> TW_PM["\"prepare_messages_node\""] --> TW_LLM["\"worker_agent_node: LLM (tools)\""]
-        TW_LLM -->|"\"tool_calls\""| TW_TOOLS["\"ToolNode(TOOLS)\""] --> TW_LLM
-        TW_LLM -->|"\"final\""| TW_EX["\"extract_theme_scripts_node\""]
-      end
-      TA_RW --> TW_LC
-    end
-    TA_ENTRY --> TA_LB
-
-    %% ---------- TickerPipeline (Theme ↔ Closing) ----------
-    subgraph TICKER["\"TickerPipeline (fan-out / fan-in)\""]
-      TP_BASE["\"base_scripts: opening+theme\""] --> TP_FO_DEB["\"fan-out: run debate per ticker\""]
-      TP_FO_DEB --> TP_FI_DEB["\"fan-in: debates collected (ordered)\""]
-      TP_FI_DEB --> TP_FO_TS["\"fan-out: ticker_script worker per ticker (tool-less)\""]
-      TP_FO_TS --> TP_MERGE["\"fan-in merge: ticker order\""] --> TP_REF["\"ticker_script_refiner (tool-less)\""]
-      TP_REF --> TEMP_TICKER["\"temp/ticker_pipeline.json\""]
-      TP_FO_DEB --> TEMP_DEBATE["\"temp/debate/{date}/{TICKER}_debate.json\""]
-
-      subgraph DEBATE["\"Debate (agents/debate/graph.py)\""]
-        D_INIT["\"init\""] --> D_LC["\"load_context\""] --> D_RR["\"run_round: 4 experts (parallel)\""] --> D_MOD["\"moderator\""]
-        D_MOD -->|"\"continue\""| D_RR
-        D_MOD -->|"\"end\""| D_OUT["\"TickerDebateOutput\""]
-
-        subgraph EXPERT["\"Expert subgraph (per role)\""]
-          E_PREP["\"prepare_messages\""] --> E_LLM["\"agent: LLM (tools)\""]
-          E_LLM -->|"\"tool_calls\""| E_TOOLS["\"tools: ToolNode\""] --> E_LLM
-          E_LLM -->|"\"final\""| E_EX["\"extract\""]
+        subgraph W1["Worker#1 (theme[0])"]
+          direction LR
+          W1LC["load_context_node"] --> W1P["prepare_messages_node"] --> W1A["worker_agent_node (ReAct)"]
+          W1A -->|tool_calls| W1T["ToolNode(TOOLS)"]
+          W1T --> W1A
+          W1A -->|final| W1E["extract_theme_scripts_node"]
         end
-        D_RR --> E_PREP
+
+        subgraph W2["Worker#2 (theme[1])"]
+          direction LR
+          W2LC["load_context_node"] --> W2P["prepare_messages_node"] --> W2A["worker_agent_node (ReAct)"]
+          W2A -->|tool_calls| W2T["ToolNode(TOOLS)"]
+          W2T --> W2A
+          W2A -->|final| W2E["extract_theme_scripts_node"]
+        end
+
+        subgraph W3["Worker#3 (theme[2])"]
+          direction LR
+          W3LC["load_context_node"] --> W3P["prepare_messages_node"] --> W3A["worker_agent_node (ReAct)"]
+          W3A -->|tool_calls| W3T["ToolNode(TOOLS)"]
+          W3T --> W3A
+          W3A -->|final| W3E["extract_theme_scripts_node"]
+        end
+
+        WN["... Worker#N"]:::ghost
       end
-      TP_FO_DEB --> D_INIT
 
-      subgraph TICKER_SCRIPT["\"Ticker Script (debate/ticker_script.py)\""]
-        TS_W["\"ticker_script_worker (per ticker, tool-less)\""] --> TS_M["\"merge scripts\""] --> TS_R["\"refiner (tool-less)\""]
+      TA0 --> W1
+      TA0 --> W2
+      TA0 --> W3
+      TA0 --> WN
+
+      W1 --> TA1["Fan-in: merge_scripts<br/>opening + theme scripts"]
+      W2 --> TA1
+      W3 --> TA1
+      WN --> TA1
+
+      TA1 --> TA2["refine_transitions<br/>edits only"]
+    end
+
+    subgraph COD["CompanyAgent 내부 (Fan-out / Debate / Fan-in)"]
+      direction LR
+      CO0["Fan-out: tickers[]<br/>사용자 입력 ticker별 병렬 실행"]
+
+      subgraph COPAR["CompanyWorker 병렬 실행 (ticker별)"]
+        direction LR
+
+        subgraph C1W["CompanyWorker#1 (ticker[0])"]
+          direction LR
+          C1LC["load_context<br/>news list + chart(30d 1d + today 5m) + SEC index"] --> C1R1["Round 1: Blind Analysis<br/>4 Persona 병렬"]
+          C1R1 --> C1DEB["Rounds 2-N: Guided Debate<br/>Moderator 진행 (멀티턴)"]
+          C1DEB --> C1CONS["Final Conclusion<br/>Consensus(action+confidence) + 근거 정리"]
+          C1CONS --> C1SCR["Ticker Script Worker<br/>(tool-less, 6~8 turns)"]
+
+          subgraph C1P["4 Expert Personas"]
+            direction LR
+            C1P1["Fundamental"]
+            C1P2["Risk Manager"]
+            C1P3["Growth Analyst"]
+            C1P4["Sentiment"]
+          end
+
+          C1R1 --> C1P1
+          C1R1 --> C1P2
+          C1R1 --> C1P3
+          C1R1 --> C1P4
+          C1P1 --> C1DEB
+          C1P2 --> C1DEB
+          C1P3 --> C1DEB
+          C1P4 --> C1DEB
+
+          C1TOOLS["Tool calls (as needed)<br/>뉴스/차트/SEC 등 근거 조회"]:::ghost
+          C1DEB -.-> C1TOOLS
+        end
+
+        subgraph C2W["CompanyWorker#2 (ticker[1])"]
+          direction LR
+          C2LC["load_context"] --> C2R1["Round 1: Blind Analysis"] --> C2DEB["Rounds 2-N: Guided Debate"] --> C2CONS["Final Conclusion"] --> C2SCR["Ticker Script Worker"]
+        end
+
+        subgraph C3W["CompanyWorker#3 (ticker[2])"]
+          direction LR
+          C3LC["load_context"] --> C3R1["Round 1: Blind Analysis"] --> C3DEB["Rounds 2-N: Guided Debate"] --> C3CONS["Final Conclusion"] --> C3SCR["Ticker Script Worker"]
+        end
+
+        CNW["... CompanyWorker#N"]:::ghost
       end
-      TP_FO_TS --> TS_W
-      TS_R --> TP_REF
+
+      CO0 --> C1W
+      CO0 --> C2W
+      CO0 --> C3W
+      CO0 --> CNW
+
+      C1SCR --> CO_M["Fan-in: merge_company_scripts<br/>기업별 파트 합치기 + id 정규화"]
+      C2SCR --> CO_M
+      C3SCR --> CO_M
+      CNW --> CO_M
+
+      CO_M --> CO_REF["ticker_script_refiner<br/>(tool-less, 전환부 다듬기)"]
+      CO_REF --> CO_O["scripts[]에 append<br/>theme 뒤에 ticker 챕터 추가"]
     end
-    TP_ENTRY --> TP_BASE
 
-    %% ---------- ClosingAgent (agents/closing/graph.py) ----------
-    subgraph CLOSING["\"ClosingAgent (agents/closing/graph.py)\""]
-      CA_LS["\"load_scripts_from_temp\""] --> CA_LC["\"load_context_node\""] --> CA_PM["\"prepare_messages_node\""] --> CA_LLM["\"agent_node: LLM (tools)\""]
-      CA_LLM -->|"\"tool_calls\""| CA_TOOLS["\"ToolNode(TOOLS)\""] --> CA_LLM
-      CA_LLM -->|"\"final\""| CA_EX["\"extract_closing_turns_node\""] --> CA_APP["\"append_scripts_node\""]
-      CA_APP --> TEMP_CLOSE["\"temp/closing.json\""]
+    subgraph CAD["ClosingAgent 내부"]
+      direction LR
+      CA_LS["load_scripts_from_temp"] --> CA_LC["load_context_node"] --> CA_PM["prepare_messages_node"] --> CA_A["agent (ReAct)"]
+      CA_A -->|tool_calls| CA_T["ToolNode(TOOLS)<br/>get_calendar/get_ohlcv"]
+      CA_T --> CA_A
+      CA_A -->|final| CA_EX["extract_closing_turns_node"]
+      CA_EX --> CA_APP["append_scripts_node"]
     end
-    CA_ENTRY --> CA_LS
+
+    PF -.-> OA_LC
+    PF -.-> W1LC
+    PF -.-> CO0
+    PF -.-> CA_LC
+
+    OA --> OA_LC
+    OA_EX --> TA
+
+    TA --> TA_LB
+    TA2 --> CO
+
+    CO --> CO0
+    CO_O --> CA
+
+    CA --> CA_LS
   end
 
-  %% ==========================================================
-  %% TTS pipeline (Gemini TTS, turn-level)
-  %% ==========================================================
-  subgraph TTS["\"TTS Pipeline (tts/src/tts.py)\""]
-    TTS_IN["\"podcast/{date}/script.json\""] --> TTS_CFG["\"load_config\""] --> TTS_V["\"validate_paths\""] --> TTS_LS["\"load_script\""]
-    TTS_LS --> TTS_MAP["\"map_turns_with_chapter\""] --> TTS_REQ["\"build_turn_requests\""] --> TTS_GEN["\"generate_turn_audio_parallel\""]
-    TTS_GEN --> TTS_TIM["\"compute_timeline\""] --> TTS_MERGE["\"merge_audio\""] --> TTS_WRITE["\"write_outputs\""]
-    TTS_YAML["\"tts/config/gemini_tts.yaml\""] --> TTS_CFG
-
-    TTS_WRITE --> OUT_WAV["\"podcast/{date}/{date}.wav\""]
-    TTS_WRITE --> OUT_JSON["\"podcast/{date}/{date}.json\""]
-    TTS_WRITE --> OUT_DB["\"podcast/podcast.db (tts_done=true)\""]
+  subgraph ARTIFACTS["Artifacts"]
+    direction LR
+    TEMP_OPEN["temp/opening.json"] --> TEMP_THEME["temp/theme.json"] --> TEMP_TICKER["temp/ticker_pipeline.json"] --> TEMP_CLOSE["temp/closing.json"]
+    TEMP_DEB["temp/debate/{date}/{TICKER}_debate.json<br/>(ticker별 Debate 산출물)"]
+    POD["podcast/{date}/script.json<br/>(date/nutshell/user_tickers/chapter/scripts)"]
+    DB1["podcast/podcast.db 업데이트<br/>upsert_script_row(...)"]
   end
-  OUT_SCRIPT --> TTS_IN
 
-  %% ==========================================================
-  %% Web frontend (Next.js static export)
-  %% ==========================================================
-  subgraph WEB["\"Web Frontend (Next.js)\""]
-    WEB_BUILD["\"npm run build:data (web/scripts/build-data.ts)\""] --> WEB_PUB["\"web/public/{data,audio}\""] --> WEB_APP["\"Next.js app (web/)\""]
+  OA_EX --> TEMP_OPEN
+  TA2 --> TEMP_THEME
+  CO_O --> TEMP_TICKER
+  CA_APP --> TEMP_CLOSE
+  CO0 --> TEMP_DEB
+
+  ORCH --> POD
+  ORCH --> DB1
+
+  subgraph TTS["TTS (script.json 생성 후 실행)"]
+    direction LR
+    POD --> TT0["python -m tts.src.tts<br/>(LangGraph)"]
+
+    subgraph TTG["TTS Graph (turn-level)"]
+      direction LR
+      TT_CFG["load_config<br/>gemini_tts.yaml 로드/검증"] --> TT_V["validate_paths<br/>script.json 존재 확인"] --> TT_LS["load_script<br/>podcast/{date}/script.json 로드"]
+      TT_LS --> TT_MAP["map_turns_with_chapter<br/>speaker→label + chapter 범위 적용"] --> TT_REQ["build_turn_requests<br/>instructions + text → prompt"]
+      TT_REQ --> TF["generate_turn_audio_parallel<br/>turn별 TTS 병렬 생성(배치)"]
+
+      subgraph TPAR["병렬 TTS 호출 (turn별)"]
+        direction LR
+        T0["turn#0 TTS → 000.wav"]
+        T1["turn#1 TTS → 001.wav"]
+        T2n["turn#2 TTS → 002.wav"]
+        Tn["... turn#N TTS → NNN.wav"]:::ghost
+      end
+
+      TF --> T0
+      TF --> T1
+      TF --> T2n
+      TF --> Tn
+
+      T0 --> TT_TIM["compute_timeline<br/>프레임 기반 start/end(ms) 계산"]
+      T1 --> TT_TIM
+      T2n --> TT_TIM
+      Tn --> TT_TIM
+
+      TT_TIM --> TT_MERGE["merge_audio<br/>{date}.wav 생성"] --> TT_OUT["write_outputs<br/>timeline.json + {date}.json 저장 + DB 업데이트"]
+    end
+
+    TT0 --> TT_CFG
+    TT_YAML["tts/config/gemini_tts.yaml"] --> TT_CFG
+
+    GEM["Gemini TTS API<br/>GEMINI_API_KEY"]
+    T0 -.-> GEM
+    T1 -.-> GEM
+    T2n -.-> GEM
+    Tn -.-> GEM
   end
-  OUT_DB --> WEB_BUILD
-  OUT_WAV --> WEB_BUILD
-  OUT_JSON --> WEB_BUILD
 
-  %% Data dependencies (high-level)
-  AWS_DDB -. "\"prefetch_all/news\"" .-> PF_NEWS
-  AWS_S3 -. "\"get_news_content (tools)\"" .-> OA_TOOLS
+  subgraph TTS_OUT["TTS Outputs"]
+    direction LR
+    WAV["podcast/{date}/{date}.wav"]
+    TURNS["podcast/{date}/tts/<turn>.wav"]
+    TL["podcast/{date}/tts/timeline.json"]
+    DATEJSON["podcast/{date}/{date}.json<br/>scripts[].time 주입"]
+    DB2["podcast/podcast.db 업데이트<br/>update_tts_row(tts_done=true)"]
+  end
+
+  TT_OUT --> WAV
+  TT_OUT --> TURNS
+  TT_OUT --> TL
+  TT_OUT --> DATEJSON
+  TT_OUT --> DB2
+
+  subgraph WEB["Web Frontend (Next.js)"]
+    direction LR
+    WEB_BUILD["npm run build:data<br/>(web/scripts/build-data.ts)"] --> WEB_PUB["web/public/{data,audio}"] --> WEB_APP["Next.js app (web/)"]
+  end
+  DB1 --> WEB_BUILD
+  WAV --> WEB_BUILD
+  DATEJSON --> WEB_BUILD
+
+  %% Data dependencies
+  AWS_DDB -. "prefetch_all/news" .-> PF
+  AWS_S3 -. "get_news_content (tools)" .-> OA_T
 ```
 
 ### Orchestrator 캐시/산출물 시퀀스
